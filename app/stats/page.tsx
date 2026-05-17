@@ -1,0 +1,157 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo } from "react";
+import { getLessons } from "@/lib/data";
+import { masteryPercent, reviewForecast, summarize, useProgress } from "@/lib/progress";
+import { DAILY_GOAL, currentStreak, todayCount, useStats } from "@/lib/stats";
+import { useMounted } from "@/lib/useMounted";
+
+export default function StatsPage() {
+  const lessons = useMemo(() => getLessons(), []);
+  const store = useProgress();
+  const stats = useStats();
+  const mounted = useMounted();
+
+  const allIds = useMemo(
+    () => lessons.flatMap((l) => l.sections.flatMap((s) => s.items.map((i) => i.id))),
+    [lessons],
+  );
+
+  if (!mounted) {
+    return (
+      <div>
+        <Header />
+        <div className="card grid h-40 place-items-center text-slate-400">Loading…</div>
+      </div>
+    );
+  }
+
+  const overall = summarize(store, allIds);
+  const streak = currentStreak(stats);
+  const today = todayCount(stats);
+  const forecast = reviewForecast(store, allIds, 7);
+  const maxF = Math.max(1, ...forecast);
+  const dayNames = nextSevenDayLabels();
+
+  return (
+    <div>
+      <Header />
+
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        <Stat big={`${streak}🔥`} label="day streak" />
+        <Stat big={`${today}/${DAILY_GOAL}`} label="today's reviews" />
+        <Stat big={`${masteryPercent(store, allIds)}%`} label="mastered" />
+      </div>
+
+      <div className="card mb-6 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold">Daily goal</h2>
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {today >= DAILY_GOAL ? "Reached 🎉" : `${DAILY_GOAL - today} to go`}
+          </span>
+        </div>
+        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${Math.min(100, (today / DAILY_GOAL) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="card mb-6 p-5">
+        <h2 className="mb-4 font-semibold">Reviews due — next 7 days</h2>
+        <div className="flex items-end justify-between gap-2" style={{ height: 120 }}>
+          {forecast.map((n, i) => (
+            <div key={i} className="flex flex-1 flex-col items-center gap-2">
+              <div className="flex w-full flex-1 items-end">
+                <div
+                  className="w-full rounded-t-md bg-indigo-500/80"
+                  style={{ height: `${(n / maxF) * 100}%`, minHeight: n > 0 ? 4 : 0 }}
+                  title={`${n} due`}
+                />
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">{dayNames[i]}</span>
+              <span className="text-[11px] font-semibold">{n}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        By lesson
+      </h2>
+      <div className="space-y-4">
+        {lessons.map((lesson) => {
+          const lessonIds = lesson.sections.flatMap((s) => s.items.map((i) => i.id));
+          const ls = summarize(store, lessonIds);
+          return (
+            <div key={lesson.id} className="card p-5">
+              <div className="flex items-center justify-between">
+                <Link
+                  href={`/lessons/${lesson.id}`}
+                  className="font-semibold hover:text-indigo-600"
+                >
+                  {lesson.title}
+                </Link>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {ls.mastered}/{ls.total} mastered
+                </span>
+              </div>
+              <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                <Seg n={ls.mastered} total={ls.total} cls="bg-emerald-500" />
+                <Seg n={ls.review} total={ls.total} cls="bg-sky-500" />
+                <Seg n={ls.learning} total={ls.total} cls="bg-amber-400" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6">
+        <Link
+          href="/guide/pronunciation"
+          className="text-sm font-medium text-indigo-600 hover:underline"
+        >
+          Pronunciation guide →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <div className="mb-6">
+      <Link href="/" className="text-sm text-slate-500 hover:text-indigo-600">
+        ← Back
+      </Link>
+      <h1 className="mt-2 text-2xl font-bold tracking-tight">Your progress</h1>
+    </div>
+  );
+}
+
+function Stat({ big, label }: { big: string; label: string }) {
+  return (
+    <div className="card p-4 text-center">
+      <div className="text-2xl font-bold">{big}</div>
+      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{label}</div>
+    </div>
+  );
+}
+
+function Seg({ n, total, cls }: { n: number; total: number; cls: string }) {
+  if (total === 0 || n === 0) return null;
+  return <div className={cls} style={{ width: `${(n / total) * 100}%` }} />;
+}
+
+function nextSevenDayLabels(): string[] {
+  const fmt = new Intl.DateTimeFormat("en", { weekday: "short" });
+  const out: string[] = [];
+  const d = new Date();
+  for (let i = 0; i < 7; i++) {
+    out.push(i === 0 ? "Today" : fmt.format(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}

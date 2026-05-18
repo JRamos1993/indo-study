@@ -9,7 +9,7 @@ export const DAILY_NEW_LIMIT = 15;
 /** Reviews/day that count as "goal met" for the streak ring. */
 export const DAILY_GOAL = 20;
 
-interface StatsData {
+export interface StatsData {
   reviewsByDay: Record<string, number>;
   newByDay: Record<string, number>;
 }
@@ -106,4 +106,12 @@ export function currentStreak(s: StatsData): number {
 
 export function resetStats(): void {
   commit({ reviewsByDay: {}, newByDay: {} });
+}
+
+export function exportStats(): StatsData {
+  return ensure();
+}
+
+export function replaceStats(next: StatsData): void {
+  commit({ reviewsByDay: next.reviewsByDay ?? {}, newByDay: next.newByDay ?? {} });
 }

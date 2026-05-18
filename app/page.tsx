@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { getLessons } from "@/lib/data";
 import { resetAllProgress, summarize, troubleItemIds, useProgress } from "@/lib/progress";
+import { DAILY_GOAL, currentStreak, todayCount, useStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
 const PRACTICE_MODES: { href: string; label: string; desc: string }[] = [
@@ -26,9 +27,13 @@ export default function Dashboard() {
     () => lessons.flatMap((l) => l.sections.flatMap((s) => s.items.map((i) => i.id))),
     [lessons],
   );
+  const stats = useStats();
   const overall = summarize(store, allIds);
   const showStats = mounted;
   const troubleCount = mounted ? troubleItemIds(store, allIds).length : 0;
+  const doneToday = mounted ? todayCount(stats) : 0;
+  const streak = mounted ? currentStreak(stats) : 0;
+  const goalMet = doneToday >= DAILY_GOAL;
 
   return (
     <div>
@@ -38,6 +43,45 @@ export default function Dashboard() {
           Study and test yourself on your Indonesian class materials.
         </p>
       </header>
+
+      {/* Study today — primary action */}
+      <Link
+        href="/today"
+        className="mb-6 block rounded-2xl bg-indigo-600 p-6 text-white shadow-sm transition hover:bg-indigo-700"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold">
+              {showStats && goalMet ? "Daily goal reached 🎉" : "Study today"}
+            </h2>
+            <p className="mt-1 text-sm text-indigo-100">
+              {!showStats
+                ? "One tap — the best mix for right now."
+                : goalMet
+                  ? "Nice work. Tap for extra practice."
+                  : `${overall.due} due${troubleCount > 0 ? ` · ${troubleCount} tricky` : ""} · a few new`}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-extrabold">{showStats ? `${streak}🔥` : "—"}</div>
+            <div className="text-[11px] uppercase tracking-wide text-indigo-200">streak</div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="mb-1 flex justify-between text-xs text-indigo-100">
+            <span>Today</span>
+            <span>
+              {showStats ? doneToday : 0}/{DAILY_GOAL}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-400/40">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{ width: `${Math.min(100, (doneToday / DAILY_GOAL) * 100)}%` }}
+            />
+          </div>
+        </div>
+      </Link>
 
       {/* Review due */}
       <div className="card mb-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">

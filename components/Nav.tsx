@@ -44,14 +44,14 @@ export function Nav() {
           {link("/", "Home")}
           {link("/stats", "Stats")}
           <Link
-            href="/review"
+            href="/today"
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-              pathname === "/review"
+              pathname === "/today"
                 ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             }`}
           >
-            Review
+            Study
             {mounted && due > 0 && (
               <span className="grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-xs font-bold text-white">
                 {due}

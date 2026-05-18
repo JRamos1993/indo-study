@@ -7,6 +7,7 @@ export type Mode =
   | "mc"
   | "type"
   | "mixed"
+  | "daily"
   | "listening"
   | "speaking"
   | "cloze"

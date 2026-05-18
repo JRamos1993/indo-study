@@ -24,6 +24,7 @@ const MODE_LABEL: Record<Mode, string> = {
   mc: "Multiple choice",
   type: "Type the answer",
   mixed: "Spaced review",
+  daily: "Today's study",
   listening: "Listening",
   speaking: "Speaking practice",
   cloze: "Fill in the blank",
@@ -36,7 +37,7 @@ function pickDirection(ctx: ItemContext): Direction {
 }
 
 function pickSub(mode: Mode): SubMode {
-  if (mode !== "mixed") return mode;
+  if (mode !== "mixed" && mode !== "daily") return mode;
   const r = Math.random();
   if (r < 0.2) return "mc";
   if (r < 0.36) return "type";
@@ -66,6 +67,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const lessonId = params.get("lesson");
   const sectionId = params.get("section");
   const trouble = params.get("trouble") === "1";
+  const daily = mode === "daily";
   const dueOnly = mode === "mixed" || params.get("due") === "1";
 
   const { englishPool, indonesianPool } = useMemo(() => {
@@ -79,7 +81,24 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const orderedPool = useMemo<ItemContext[]>(() => {
     if (!mounted) return [];
     let base: ItemContext[];
-    if (trouble) {
+    if (daily) {
+      // Today's mix: everything due (new items capped) + trouble words.
+      const allItems = getAllItems();
+      const troubleSet = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
+      const allowedNew = Math.max(0, DAILY_NEW_LIMIT - getNewIntroducedToday());
+      let usedNew = 0;
+      base = allItems.filter((c) => {
+        const st = store[c.item.id];
+        if (isDue(st)) {
+          if (isNew(st)) {
+            if (usedNew >= allowedNew) return false;
+            usedNew += 1;
+          }
+          return true;
+        }
+        return troubleSet.has(c.item.id);
+      });
+    } else if (trouble) {
       const allItems = getAllItems();
       const ids = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
       base = allItems.filter((c) => ids.has(c.item.id));
@@ -104,7 +123,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     return [...fresh, ...seen];
     // store is intentionally read once at session start (stable queue).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, dueOnly, trouble, lessonId, sectionId]);
+  }, [mounted, daily, dueOnly, trouble, lessonId, sectionId]);
 
   const [batchStart, setBatchStart] = useState(0);
   const [queue, setQueue] = useState<Card[]>([]);
@@ -132,7 +151,11 @@ export function PracticeSession({ mode }: { mode: Mode }) {
 
   const current = queue[0];
   const remainingInCorpus = orderedPool.length - batchStart - SESSION_CAP;
-  const subtitle = trouble ? "Trouble words" : scopeLabel({ lessonId, sectionId });
+  const subtitle = daily
+    ? "Due reviews, trouble words & new"
+    : trouble
+      ? "Trouble words"
+      : scopeLabel({ lessonId, sectionId });
 
   if (!mounted) {
     return (
@@ -145,7 +168,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   if (orderedPool.length === 0) {
     return (
       <SessionShell title={MODE_LABEL[mode]}>
-        <EmptyState reason={trouble ? "trouble" : dueOnly ? "due" : "scope"} />
+        <EmptyState reason={daily ? "daily" : trouble ? "trouble" : dueOnly ? "due" : "scope"} />
       </SessionShell>
     );
   }
@@ -278,8 +301,13 @@ function Loading() {
   return <div className="card grid h-56 place-items-center text-slate-400">Loading…</div>;
 }
 
-function EmptyState({ reason }: { reason: "due" | "trouble" | "scope" }) {
+function EmptyState({ reason }: { reason: "due" | "trouble" | "scope" | "daily" }) {
   const copy = {
+    daily: {
+      icon: "🎉",
+      title: "Daily goal reached",
+      body: "Nothing left for today — no reviews due, no trouble words. Great work!",
+    },
     due: {
       icon: "✅",
       title: "Nothing due right now",

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
+import { buildBackup, restoreBackup } from "@/lib/backup";
 import { getLessons } from "@/lib/data";
 import { masteryPercent, reviewForecast, summarize, useProgress } from "@/lib/progress";
 import { DAILY_GOAL, currentStreak, todayCount, useStats } from "@/lib/stats";
@@ -108,6 +109,8 @@ export default function StatsPage() {
         })}
       </div>
 
+      <BackupCard />
+
       <div className="mt-6">
         <Link
           href="/guide/pronunciation"
@@ -116,6 +119,72 @@ export default function StatsPage() {
           Pronunciation guide →
         </Link>
       </div>
+    </div>
+  );
+}
+
+function BackupCard() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const onExport = () => {
+    const blob = new Blob([JSON.stringify(buildBackup(), null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `indo-study-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onImport = async (file: File) => {
+    const text = await file.text();
+    const res = restoreBackup(text);
+    if (res.ok) {
+      setMsg("Progress restored. Reloading…");
+      setTimeout(() => location.reload(), 600);
+    } else {
+      setMsg(res.error);
+    }
+  };
+
+  return (
+    <div className="card mt-6 p-5">
+      <h2 className="font-semibold">Backup &amp; move devices</h2>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Progress lives in this browser only. Export a file, then import it on another
+        device to carry your streak and mastery across.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          onClick={onExport}
+          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+        >
+          Export progress
+        </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          Import progress
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onImport(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+      {msg && (
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{msg}</p>
+      )}
     </div>
   );
 }

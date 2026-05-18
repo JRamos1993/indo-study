@@ -1,8 +1,35 @@
-// Thin wrapper around the Web Speech API for Indonesian pronunciation.
-// Degrades to a no-op if speech synthesis or an Indonesian voice is missing.
+// Pronunciation: prefer bundled pre-generated audio (reliable on every device);
+// fall back to the Web Speech API; degrade to a no-op if neither is available.
+
+import { audioFileFor, hasBundledAudio } from "@/lib/audioManifest";
 
 export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
+}
+
+/** True if we can pronounce anything at all (bundled audio or a voice). */
+export function pronunciationAvailable(): boolean {
+  return hasBundledAudio() || speechSupported();
+}
+
+let currentAudio: HTMLAudioElement | null = null;
+
+/** Play a phrase: bundled mp3 if we generated one, else Web Speech. */
+export function playPhrase(text: string): void {
+  if (!text.trim()) return;
+  const file = audioFileFor(text);
+  if (file && typeof Audio !== "undefined") {
+    if (speechSupported()) window.speechSynthesis.cancel();
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    const a = new Audio(`/audio/${file}`);
+    currentAudio = a;
+    a.play().catch(() => speak(text)); // autoplay blocked / missing file
+    return;
+  }
+  speak(text);
 }
 
 function indonesianVoice(): SpeechSynthesisVoice | null {

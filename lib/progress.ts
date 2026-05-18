@@ -73,6 +73,14 @@ export function resetAllProgress(): void {
   commit({});
 }
 
+export function exportProgress(): ProgressStore {
+  return ensure();
+}
+
+export function replaceProgress(next: ProgressStore): void {
+  commit(next);
+}
+
 // ── Selectors (work on a snapshot from useProgress) ──────────────────────────
 
 export function dueItemIds(store: ProgressStore, allIds: string[], now: number = Date.now()): string[] {

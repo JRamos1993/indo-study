@@ -15,7 +15,7 @@ import {
   wordTokens,
 } from "@/lib/quiz";
 import type { Grade } from "@/lib/srs";
-import { speak } from "@/lib/speech";
+import { playPhrase } from "@/lib/speech";
 import type { ItemContext } from "@/lib/types";
 import { SpeakButton } from "../SpeakButton";
 
@@ -343,7 +343,7 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
   );
 
   useEffect(() => {
-    speak(ctx.item.indonesian);
+    playPhrase(ctx.item.indonesian);
   }, [ctx.item.indonesian]);
 
   return (
@@ -351,7 +351,7 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
       <Tag left="Listening" right="Choose the meaning" />
       <div className="grid min-h-28 place-items-center py-4">
         <button
-          onClick={() => speak(ctx.item.indonesian)}
+          onClick={() => playPhrase(ctx.item.indonesian)}
           className="flex items-center gap-2 rounded-full border border-indigo-300 px-5 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
         >
           <svg width={20} height={20} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -424,7 +424,7 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
 
   useEffect(() => {
     if (!revealed) return;
-    speak(ctx.item.indonesian);
+    playPhrase(ctx.item.indonesian);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "1") onGrade("again");
       if (e.key === "2") onGrade("good");

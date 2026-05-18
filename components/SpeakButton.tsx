@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { speak, speechSupported, warmUpVoices } from "@/lib/speech";
+import { playPhrase, pronunciationAvailable, warmUpVoices } from "@/lib/speech";
 
 export function SpeakButton({
   text,
@@ -16,7 +16,7 @@ export function SpeakButton({
     warmUpVoices();
   }, []);
 
-  if (!speechSupported()) return null;
+  if (!pronunciationAvailable()) return null;
 
   const dim = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-7 w-7" : "h-9 w-9";
   const icon = size === "lg" ? 22 : size === "sm" ? 14 : 18;
@@ -28,7 +28,7 @@ export function SpeakButton({
       title="Hear pronunciation"
       onClick={(e) => {
         e.stopPropagation();
-        speak(text);
+        playPhrase(text);
       }}
       className={`inline-flex shrink-0 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-50 active:scale-95 dark:text-indigo-300 dark:hover:bg-indigo-950/60 ${dim} ${className}`}
     >

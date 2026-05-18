@@ -2,7 +2,16 @@
 
 import { useSyncExternalStore } from "react";
 import { duplicateGroups } from "@/lib/data";
-import { type CardState, type Grade, familiarity, isDue, isMastered, isNew, schedule } from "@/lib/srs";
+import {
+  type CardState,
+  type Grade,
+  familiarity,
+  isDue,
+  isMastered,
+  isNew,
+  migrateState,
+  schedule,
+} from "@/lib/srs";
 import { recordReview } from "@/lib/stats";
 
 const KEY = "indo-study:progress:v1";
@@ -13,11 +22,17 @@ const EMPTY: ProgressStore = Object.freeze({});
 let cache: ProgressStore | null = null;
 const listeners = new Set<() => void>();
 
+function migrateAll(store: Record<string, unknown>): ProgressStore {
+  const out: ProgressStore = {};
+  for (const id in store) out[id] = migrateState(store[id]);
+  return out;
+}
+
 function readFromDisk(): ProgressStore {
   if (typeof window === "undefined") return EMPTY;
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as ProgressStore) : {};
+    return raw ? migrateAll(JSON.parse(raw) as Record<string, unknown>) : {};
   } catch {
     return {};
   }
@@ -78,7 +93,7 @@ export function exportProgress(): ProgressStore {
 }
 
 export function replaceProgress(next: ProgressStore): void {
-  commit(next);
+  commit(migrateAll(next as Record<string, unknown>));
 }
 
 // ── Selectors (work on a snapshot from useProgress) ──────────────────────────

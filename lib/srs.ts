@@ -1,22 +1,84 @@
-// Pure SM-2-lite spaced-repetition scheduler. No I/O — easy to reason about/test.
+// FSRS (Free Spaced Repetition Scheduler), FSRS-5. Pure, no I/O.
+// Models each card's memory stability (S, days until R=90%) and difficulty (D,
+// 1..10) and schedules the next review at REQUEST_RETENTION. Replaces the old
+// SM-2-lite scheduler; old records are upgraded by migrateState().
 
-export type Grade = "again" | "good" | "easy";
+export type Grade = "again" | "hard" | "good" | "easy";
 
 export interface CardState {
-  ease: number; // interval multiplier
-  intervalDays: number;
+  stability: number; // days; expected retention 0.9 after this many days
+  difficulty: number; // 1 (easy) .. 10 (hard)
   dueAt: number; // epoch ms
-  reps: number; // consecutive successful reviews
-  lapses: number; // times forgotten after being learned
   lastReviewed: number | null;
+  reps: number; // successful reviews in a row (UI/heuristics)
+  lapses: number; // times forgotten after being learned (trouble deck)
 }
 
-export const DEFAULT_EASE = 2.3;
-const MIN_EASE = 1.3;
 const DAY = 86_400_000;
 
+// ts-fsrs FSRS-5 default parameters.
+const W = [
+  0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046, 1.54575,
+  0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315, 2.9898, 0.51655,
+  0.6621,
+];
+const DECAY = -0.5;
+const FACTOR = 0.9 ** (1 / DECAY) - 1; // = 19/81
+const REQUEST_RETENTION = 0.9;
+const MAX_INTERVAL = 365;
+const MASTERED_STABILITY = 30; // S ≥ ~1 month ⇒ "mastered"
+
+const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+const gradeNum = (g: Grade): number => ({ again: 1, hard: 2, good: 3, easy: 4 })[g];
+
+function retrievability(elapsedDays: number, stability: number): number {
+  return (1 + (FACTOR * elapsedDays) / stability) ** DECAY;
+}
+
+function initStability(g: number): number {
+  return Math.max(0.1, W[g - 1]);
+}
+function initDifficulty(g: number): number {
+  return clamp(W[4] - Math.exp(W[5] * (g - 1)) + 1, 1, 10);
+}
+function nextDifficulty(d: number, g: number): number {
+  const deltaD = -W[6] * (g - 3);
+  const next = d + deltaD * ((10 - d) / 9); // linear damping
+  const meanReverted = W[7] * initDifficulty(4) + (1 - W[7]) * next; // toward D0(Easy)
+  return clamp(meanReverted, 1, 10);
+}
+function nextStabilitySuccess(d: number, s: number, r: number, g: number): number {
+  const hard = g === 2 ? W[15] : 1;
+  const easy = g === 4 ? W[16] : 1;
+  const inc =
+    Math.exp(W[8]) *
+    (11 - d) *
+    s ** -W[9] *
+    (Math.exp(W[10] * (1 - r)) - 1) *
+    hard *
+    easy;
+  return Math.max(0.1, s * (1 + inc));
+}
+function nextStabilityLapse(d: number, s: number, r: number): number {
+  const post =
+    W[11] * d ** -W[12] * ((s + 1) ** W[13] - 1) * Math.exp(W[14] * (1 - r));
+  return clamp(post, 0.1, s); // never exceeds pre-lapse stability
+}
+
+function intervalDays(stability: number): number {
+  const raw = (stability / FACTOR) * (REQUEST_RETENTION ** (1 / DECAY) - 1);
+  return clamp(Math.round(raw), 1, MAX_INTERVAL);
+}
+
 export function freshState(): CardState {
-  return { ease: DEFAULT_EASE, intervalDays: 0, dueAt: 0, reps: 0, lapses: 0, lastReviewed: null };
+  return {
+    stability: 0,
+    difficulty: 0,
+    dueAt: 0,
+    lastReviewed: null,
+    reps: 0,
+    lapses: 0,
+  };
 }
 
 export function isNew(s?: CardState | null): boolean {
@@ -28,35 +90,61 @@ export function isDue(s: CardState | undefined | null, now: number = Date.now())
   return (s as CardState).dueAt <= now;
 }
 
-export function schedule(prev: CardState | undefined | null, grade: Grade, now: number = Date.now()): CardState {
-  const s: CardState = prev ? { ...prev } : freshState();
+export function schedule(
+  prev: CardState | undefined | null,
+  grade: Grade,
+  now: number = Date.now(),
+): CardState {
+  const g = gradeNum(grade);
+  const fresh = isNew(prev);
+  const base: CardState = prev ? { ...prev } : freshState();
 
-  if (grade === "again") {
-    if (prev && prev.reps > 0) s.lapses += 1;
-    s.reps = 0;
-    s.ease = Math.max(MIN_EASE, s.ease - 0.2);
-    s.intervalDays = 0;
-    s.dueAt = now + 60_000; // ~1 min → still due this session
+  let stability: number;
+  let difficulty: number;
+
+  if (fresh) {
+    stability = initStability(g);
+    difficulty = initDifficulty(g);
   } else {
-    s.reps += 1;
-    if (grade === "easy") s.ease += 0.15;
-
-    let interval: number;
-    if (s.reps === 1) interval = 1;
-    else if (s.reps === 2) interval = 3;
-    else interval = Math.round(Math.max(1, s.intervalDays) * s.ease);
-    if (grade === "easy") interval = Math.round(interval * 1.3);
-
-    s.intervalDays = Math.max(1, interval);
-    s.dueAt = now + s.intervalDays * DAY;
+    const elapsed = Math.max(0, (now - (base.lastReviewed as number)) / DAY);
+    const r = retrievability(elapsed, base.stability);
+    difficulty = nextDifficulty(base.difficulty, g);
+    stability =
+      g === 1
+        ? nextStabilityLapse(base.difficulty, base.stability, r)
+        : nextStabilitySuccess(base.difficulty, base.stability, r, g);
   }
 
-  s.lastReviewed = now;
-  return s;
+  const out: CardState = { ...base, stability, difficulty, lastReviewed: now };
+
+  if (grade === "again") {
+    if (prev && prev.reps > 0) out.lapses = base.lapses + 1;
+    out.reps = 0;
+    out.dueAt = now + 5 * 60_000; // short learning step → resurfaces this session
+  } else {
+    out.reps = base.reps + 1;
+    out.dueAt = now + intervalDays(stability) * DAY;
+  }
+  return out;
+}
+
+/** Human-readable next interval per grade, for grade-button hints. */
+export function previewIntervals(
+  prev: CardState | undefined | null,
+  now: number = Date.now(),
+): Record<Grade, string> {
+  const fmt = (g: Grade): string => {
+    if (g === "again") return "<5m";
+    const d = Math.round((schedule(prev, g, now).dueAt - now) / DAY);
+    if (d >= 365) return `${Math.round(d / 365)}y`;
+    if (d >= 30) return `${Math.round(d / 30)}mo`;
+    return `${Math.max(1, d)}d`;
+  };
+  return { again: fmt("again"), hard: fmt("hard"), good: fmt("good"), easy: fmt("easy") };
 }
 
 export function isMastered(s?: CardState | null): boolean {
-  return !!s && s.reps >= 4 && s.ease >= DEFAULT_EASE;
+  return !!s && s.lastReviewed !== null && s.stability >= MASTERED_STABILITY;
 }
 
 export type Familiarity = "new" | "learning" | "review" | "mastered";
@@ -64,6 +152,39 @@ export type Familiarity = "new" | "learning" | "review" | "mastered";
 export function familiarity(s?: CardState | null): Familiarity {
   if (isNew(s)) return "new";
   if (isMastered(s)) return "mastered";
-  if ((s as CardState).reps >= 2) return "review";
-  return "learning";
+  return (s as CardState).stability >= 1 ? "review" : "learning";
+}
+
+/** Upgrade an old SM-2-lite record (ease/intervalDays, no stability) to FSRS.
+ *  Idempotent: an already-FSRS record is returned normalized. */
+export function migrateState(raw: unknown): CardState {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const num = (v: unknown, d: number) => (typeof v === "number" && isFinite(v) ? v : d);
+  const lastReviewed =
+    typeof o.lastReviewed === "number" ? o.lastReviewed : null;
+
+  if (typeof o.stability === "number") {
+    return {
+      stability: num(o.stability, 0),
+      difficulty: clamp(num(o.difficulty, 5), 1, 10),
+      dueAt: num(o.dueAt, 0),
+      lastReviewed,
+      reps: num(o.reps, 0),
+      lapses: num(o.lapses, 0),
+    };
+  }
+
+  if (lastReviewed === null) return freshState();
+
+  // Old shape → approximate FSRS state.
+  const ease = num(o.ease, 2.3);
+  const interval = num(o.intervalDays, 0);
+  return {
+    stability: Math.max(0.1, interval),
+    difficulty: clamp(11 - ((ease - 1.3) / (2.6 - 1.3)) * 9, 1, 10),
+    dueAt: num(o.dueAt, 0),
+    lastReviewed,
+    reps: num(o.reps, 0),
+    lapses: num(o.lapses, 0),
+  };
 }

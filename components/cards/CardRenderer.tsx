@@ -14,7 +14,8 @@ import {
   shuffle,
   wordTokens,
 } from "@/lib/quiz";
-import type { Grade } from "@/lib/srs";
+import { useProgress } from "@/lib/progress";
+import { type Grade, previewIntervals } from "@/lib/srs";
 import { playPhrase } from "@/lib/speech";
 import type { ItemContext } from "@/lib/types";
 import { SpeakButton } from "../SpeakButton";
@@ -87,28 +88,34 @@ function kindLabel(ctx: ItemContext) {
   return ctx.item.kind === "sentence" ? "Sentence" : "Vocabulary";
 }
 
-function GradeRow({ onGrade }: { onGrade: (g: Grade) => void }) {
-  const base = "rounded-xl border py-3 text-sm font-semibold transition";
+function GradeRow({
+  onGrade,
+  intervals,
+}: {
+  onGrade: (g: Grade) => void;
+  intervals?: Record<Grade, string>;
+}) {
+  const base =
+    "flex flex-col items-center gap-0.5 rounded-xl border py-2.5 text-xs font-semibold transition";
+  const cells: { g: Grade; key: string; label: string; cls: string }[] = [
+    { g: "again", key: "1", label: "Again", cls: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40" },
+    { g: "hard", key: "2", label: "Hard", cls: "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40" },
+    { g: "good", key: "3", label: "Good", cls: "border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40" },
+    { g: "easy", key: "4", label: "Easy", cls: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40" },
+  ];
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <button
-        onClick={() => onGrade("again")}
-        className={`${base} border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40`}
-      >
-        Again<span className="ml-1 opacity-60">1</span>
-      </button>
-      <button
-        onClick={() => onGrade("good")}
-        className={`${base} border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40`}
-      >
-        Good<span className="ml-1 opacity-60">2</span>
-      </button>
-      <button
-        onClick={() => onGrade("easy")}
-        className={`${base} border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40`}
-      >
-        Easy<span className="ml-1 opacity-60">3</span>
-      </button>
+    <div className="grid grid-cols-4 gap-2">
+      {cells.map(({ g, key, label, cls }) => (
+        <button key={g} onClick={() => onGrade(g)} className={`${base} ${cls}`}>
+          <span>
+            {label}
+            <span className="ml-1 opacity-50">{key}</span>
+          </span>
+          {intervals && (
+            <span className="text-[10px] font-normal opacity-70">{intervals[g]}</span>
+          )}
+        </button>
+      ))}
     </div>
   );
 }
@@ -159,6 +166,8 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
   const prompt = promptText(ctx, dir);
   const answer = answerText(ctx, dir);
   const [revealed, setRevealed] = useState(false);
+  const store = useProgress();
+  const intervals = previewIntervals(store[ctx.item.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -167,8 +176,9 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
         setRevealed(true);
       } else if (revealed) {
         if (e.key === "1") onGrade("again");
-        if (e.key === "2") onGrade("good");
-        if (e.key === "3") onGrade("easy");
+        if (e.key === "2") onGrade("hard");
+        if (e.key === "3") onGrade("good");
+        if (e.key === "4") onGrade("easy");
       }
     };
     window.addEventListener("keydown", onKey);
@@ -196,7 +206,7 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
           </div>
           <NoteLine text={ctx.item.note} />
           <div className="mt-4">
-            <GradeRow onGrade={onGrade} />
+            <GradeRow onGrade={onGrade} intervals={intervals} />
           </div>
         </>
       )}
@@ -332,7 +342,7 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
           answer={answer}
           speakText={!promptIsId ? ctx.item.indonesian : null}
           note={ctx.item.note}
-          onNext={() => onGrade(checked.correct ? "good" : "again")}
+          onNext={() => onGrade(checked.correct ? (checked.fuzzy ? "hard" : "good") : "again")}
         />
       )}
       <SourceLine ctx={ctx} />
@@ -433,14 +443,17 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
 
 function SpeakingCard({ ctx, onGrade }: SubProps) {
   const [revealed, setRevealed] = useState(false);
+  const store = useProgress();
+  const intervals = previewIntervals(store[ctx.item.id]);
 
   useEffect(() => {
     if (!revealed) return;
     playPhrase(ctx.item.indonesian);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "1") onGrade("again");
-      if (e.key === "2") onGrade("good");
-      if (e.key === "3") onGrade("easy");
+      if (e.key === "2") onGrade("hard");
+      if (e.key === "3") onGrade("good");
+      if (e.key === "4") onGrade("easy");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -471,7 +484,7 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
           </div>
           <NoteLine text={ctx.item.note} />
           <p className="mb-2 text-center text-xs text-slate-400">How did you do?</p>
-          <GradeRow onGrade={onGrade} />
+          <GradeRow onGrade={onGrade} intervals={intervals} />
         </>
       )}
       <SourceLine ctx={ctx} />
@@ -557,7 +570,7 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
           <NoteLine text={ctx.item.note} />
           <button
             autoFocus
-            onClick={() => onGrade(checked.correct ? "good" : "again")}
+            onClick={() => onGrade(checked.correct ? (checked.fuzzy ? "hard" : "good") : "again")}
             className={`mt-3 ${PRIMARY}`}
           >
             Next

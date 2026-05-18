@@ -229,6 +229,10 @@ function McCard({ ctx, card, englishPool, indonesianPool, onGrade }: SubProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [selected, choices]);
 
+  useEffect(() => {
+    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
+  }, [selected, answer, ctx.item.indonesian]);
+
   return (
     <div className="card p-7">
       <Tag left={kindLabel(ctx)} right={promptIsId ? "Indonesian → English" : "English → Indonesian"} />
@@ -288,6 +292,10 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
+  useEffect(() => {
+    if (checked?.correct) playPhrase(ctx.item.indonesian);
+  }, [checked, ctx.item.indonesian]);
+
   return (
     <div className="card p-7">
       <Tag left={kindLabel(ctx)} right={promptIsId ? "Indonesian → English" : "English → Indonesian"} />
@@ -345,6 +353,10 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
   useEffect(() => {
     playPhrase(ctx.item.indonesian);
   }, [ctx.item.indonesian]);
+
+  useEffect(() => {
+    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
+  }, [selected, answer, ctx.item.indonesian]);
 
   return (
     <div className="card p-7">
@@ -477,6 +489,10 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
+  useEffect(() => {
+    if (checked?.correct) playPhrase(ctx.item.indonesian);
+  }, [checked, ctx.item.indonesian]);
+
   // Fallback (no maskable word): translate-to-Indonesian typing instead.
   if (!cloze) {
     return (
@@ -560,6 +576,10 @@ function OrderCard({ ctx, onGrade }: SubProps) {
   const order = useMemo(() => shuffle(tokens.map((_, i) => i)), [tokens]);
   const [picked, setPicked] = useState<number[]>([]);
   const [result, setResult] = useState<null | boolean>(null);
+
+  useEffect(() => {
+    if (result === true) playPhrase(ctx.item.indonesian);
+  }, [result, ctx.item.indonesian]);
 
   const pickedSet = new Set(picked);
   const assembled = picked.map((i) => tokens[i]).join(" ");

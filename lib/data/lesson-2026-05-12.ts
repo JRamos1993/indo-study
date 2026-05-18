@@ -128,7 +128,7 @@ export const lesson: RawLesson = {
       titleEn: "Food and Daily Activities",
       titleId: "Makanan dan Kegiatan Sehari-hari",
       items: [
-        { idn: "makanan", en: "food", kind: "vocab" },
+        { idn: "makanan", en: "food", kind: "vocab", root: "makan" },
         { idn: "makan pagi / sarapan", en: "breakfast", kind: "vocab" },
         { idn: "sayur", en: "vegetable", kind: "vocab" },
         { idn: "membeli sayur", en: "buy vegetables", kind: "vocab" },

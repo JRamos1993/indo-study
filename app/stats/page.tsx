@@ -5,13 +5,15 @@ import { useMemo, useRef, useState } from "react";
 import { buildBackup, restoreBackup } from "@/lib/backup";
 import { getLessons } from "@/lib/data";
 import { masteryPercent, reviewForecast, summarize, useProgress } from "@/lib/progress";
-import { DAILY_GOAL, currentStreak, todayCount, useStats } from "@/lib/stats";
+import { useSettings } from "@/lib/settings";
+import { currentStreak, todayCount, useStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
 export default function StatsPage() {
   const lessons = useMemo(() => getLessons(), []);
   const store = useProgress();
   const stats = useStats();
+  const dailyGoal = useSettings().dailyGoal;
   const mounted = useMounted();
 
   const allIds = useMemo(
@@ -41,7 +43,7 @@ export default function StatsPage() {
 
       <div className="mb-6 grid grid-cols-3 gap-3">
         <Stat big={`${streak}🔥`} label="day streak" />
-        <Stat big={`${today}/${DAILY_GOAL}`} label="today's reviews" />
+        <Stat big={`${today}/${dailyGoal}`} label="today's reviews" />
         <Stat big={`${masteryPercent(store, allIds)}%`} label="mastered" />
       </div>
 
@@ -49,13 +51,13 @@ export default function StatsPage() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Daily goal</h2>
           <span className="text-sm text-slate-500 dark:text-slate-400">
-            {today >= DAILY_GOAL ? "Reached 🎉" : `${DAILY_GOAL - today} to go`}
+            {today >= dailyGoal ? "Reached 🎉" : `${dailyGoal - today} to go`}
           </span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all"
-            style={{ width: `${Math.min(100, (today / DAILY_GOAL) * 100)}%` }}
+            style={{ width: `${Math.min(100, (today / dailyGoal) * 100)}%` }}
           />
         </div>
       </div>

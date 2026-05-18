@@ -4,11 +4,6 @@ import { useSyncExternalStore } from "react";
 
 const KEY = "indo-study:stats:v1";
 
-/** Soft cap on brand-new items introduced per day inside spaced review. */
-export const DAILY_NEW_LIMIT = 15;
-/** Reviews/day that count as "goal met" for the streak ring. */
-export const DAILY_GOAL = 20;
-
 export interface StatsData {
   reviewsByDay: Record<string, number>;
   newByDay: Record<string, number>;
@@ -83,6 +78,17 @@ export function recordReview(wasNew: boolean): void {
   });
 }
 
+/** Reverse the most recent recordReview (single-level undo of a grade). */
+export function undoReview(wasNew: boolean): void {
+  const s = ensure();
+  const d = today();
+  const reviews = { ...s.reviewsByDay };
+  if (reviews[d]) reviews[d] = Math.max(0, reviews[d] - 1);
+  const news = { ...s.newByDay };
+  if (wasNew && news[d]) news[d] = Math.max(0, news[d] - 1);
+  commit({ reviewsByDay: reviews, newByDay: news });
+}
+
 export function getNewIntroducedToday(): number {
   return ensure().newByDay[today()] ?? 0;
 }
@@ -91,15 +97,24 @@ export function todayCount(s: StatsData): number {
   return s.reviewsByDay[today()] ?? 0;
 }
 
-/** Consecutive days (ending today, or yesterday if today not done yet). */
+/** Consecutive days (ending today, or yesterday if today not done yet),
+ *  tolerating a single missed "grace" day so one busy day won't reset it. */
 export function currentStreak(s: StatsData): number {
   const has = (d: Date) => (s.reviewsByDay[dayKey(d)] ?? 0) > 0;
   const d = new Date();
-  if (!has(d)) d.setDate(d.getDate() - 1);
+  if (!has(d)) d.setDate(d.getDate() - 1); // today not done yet — that's fine
   let n = 0;
-  while (has(d)) {
-    n += 1;
-    d.setDate(d.getDate() - 1);
+  let graceUsed = false;
+  for (;;) {
+    if (has(d)) {
+      n += 1;
+      d.setDate(d.getDate() - 1);
+    } else if (!graceUsed) {
+      graceUsed = true; // forgive one gap inside the streak
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
   }
   return n;
 }

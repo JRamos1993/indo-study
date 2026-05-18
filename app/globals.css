@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Class-based dark mode so the Settings toggle can force light/dark
+   (a `.dark` class on <html> is managed by lib/settings applyTheme). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light dark;
 }

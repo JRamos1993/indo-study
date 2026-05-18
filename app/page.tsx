@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { getLessons } from "@/lib/data";
-import { resetAllProgress, summarize, troubleItemIds, useProgress } from "@/lib/progress";
-import { DAILY_GOAL, currentStreak, todayCount, useStats } from "@/lib/stats";
+import { hasWordBuilding } from "@/lib/affixes";
+import { summarize, troubleItemIds, useProgress } from "@/lib/progress";
+import { useSettings } from "@/lib/settings";
+import { currentStreak, todayCount, useStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
 const PRACTICE_MODES: { href: string; label: string; desc: string }[] = [
@@ -12,9 +14,13 @@ const PRACTICE_MODES: { href: string; label: string; desc: string }[] = [
   { href: "/quiz/mc", label: "Multiple choice", desc: "Pick the meaning" },
   { href: "/quiz/type", label: "Type the answer", desc: "Active recall" },
   { href: "/quiz/cloze", label: "Fill the blank", desc: "Sentence grammar" },
+  { href: "/quiz/confusables", label: "Which form?", desc: "Confusable pairs" },
   { href: "/study/listening", label: "Listening", desc: "Hear & choose" },
   { href: "/study/speaking", label: "Speaking", desc: "Say it aloud" },
   { href: "/study/order", label: "Word order", desc: "Build sentences" },
+  ...(hasWordBuilding()
+    ? [{ href: "/study/word-building", label: "Word building", desc: "Roots & affixes" }]
+    : []),
   { href: "/review", label: "Spaced review", desc: "Smart mix, all due" },
 ];
 
@@ -28,12 +34,14 @@ export default function Dashboard() {
     [lessons],
   );
   const stats = useStats();
+  const settings = useSettings();
+  const dailyGoal = settings.dailyGoal;
   const overall = summarize(store, allIds);
   const showStats = mounted;
   const troubleCount = mounted ? troubleItemIds(store, allIds).length : 0;
   const doneToday = mounted ? todayCount(stats) : 0;
   const streak = mounted ? currentStreak(stats) : 0;
-  const goalMet = doneToday >= DAILY_GOAL;
+  const goalMet = doneToday >= dailyGoal;
 
   return (
     <div>
@@ -71,13 +79,13 @@ export default function Dashboard() {
           <div className="mb-1 flex justify-between text-xs text-indigo-100">
             <span>Today</span>
             <span>
-              {showStats ? doneToday : 0}/{DAILY_GOAL}
+              {showStats ? doneToday : 0}/{dailyGoal}
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-400/40">
             <div
               className="h-full rounded-full bg-white transition-all"
-              style={{ width: `${Math.min(100, (doneToday / DAILY_GOAL) * 100)}%` }}
+              style={{ width: `${Math.min(100, (doneToday / dailyGoal) * 100)}%` }}
             />
           </div>
         </div>
@@ -229,16 +237,24 @@ export default function Dashboard() {
       </div>
 
       <footer className="mt-10 border-t border-slate-200 pt-5 text-xs text-slate-400 dark:border-slate-800">
-        <p className="mb-2">
+        <p className="mb-2 flex flex-wrap gap-x-2 gap-y-1">
+          <Link href="/glossary" className="font-medium text-indigo-600 hover:underline">
+            Glossary
+          </Link>
+          ·
           <Link
             href="/guide/pronunciation"
             className="font-medium text-indigo-600 hover:underline"
           >
             Pronunciation guide
-          </Link>{" "}
-          ·{" "}
+          </Link>
+          ·
           <Link href="/stats" className="font-medium text-indigo-600 hover:underline">
             Progress &amp; stats
+          </Link>
+          ·
+          <Link href="/settings" className="font-medium text-indigo-600 hover:underline">
+            Settings
           </Link>
         </p>
         <p>
@@ -246,16 +262,6 @@ export default function Dashboard() {
           Indonesian voice (install an Indonesian TTS voice in your OS settings if you hear
           nothing).
         </p>
-        {showStats && overall.mastered + overall.review + overall.learning > 0 && (
-          <button
-            onClick={() => {
-              if (confirm("Reset all study progress? This cannot be undone.")) resetAllProgress();
-            }}
-            className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            Reset progress
-          </button>
-        )}
       </footer>
     </div>
   );

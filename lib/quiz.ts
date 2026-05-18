@@ -125,8 +125,26 @@ export interface Cloze {
 const tokenCore = (t: string): string =>
   t.replace(/^[^\p{L}\p{N}-]+/u, "").replace(/[^\p{L}\p{N}-]+$/u, "");
 
-/** Pick one meaningful word in a sentence to blank out for a cloze.
- *  Prefers a word that is itself a known vocab term; never the first word. */
+const FUNCTION_WORDS = new Set([
+  "di", "ke", "dari", "yang", "sudah", "belum", "akan", "sedang", "tidak",
+  "dan", "atau", "untuk", "kalau", "juga", "saja", "lagi", "mau", "bisa",
+  "ada", "karena", "sama", "kan",
+]);
+
+/** Affixed/derived form or grammatical function word — the pedagogically
+ *  interesting things to blank in a cloze. */
+function isGrammarToken(word: string): boolean {
+  if (FUNCTION_WORDS.has(word)) return true;
+  if (word.length < 5) return false;
+  return (
+    /^(menge|menye|meng|meny|mem|men|me|ber|ter|peng|pem|pen|pe|se)/.test(word) ||
+    /(kan|nya|an|ku|mu|i)$/.test(word)
+  );
+}
+
+/** Pick one meaningful word in a sentence to blank out for a cloze. Prefers
+ *  grammar-bearing words (affixes/function words), then known vocab terms;
+ *  never the first word. */
 export function makeCloze(sentence: string, preferNormalized: Set<string>): Cloze | null {
   const tokens = wordTokens(sentence);
   if (tokens.length < 3) return null;
@@ -135,10 +153,11 @@ export function makeCloze(sentence: string, preferNormalized: Set<string>): Cloz
     if (tokenCore(tokens[i]).length >= 3) candidates.push(i);
   }
   if (candidates.length === 0) return null;
-  const preferred = candidates.filter((i) =>
+  const grammar = candidates.filter((i) => isGrammarToken(normalize(tokenCore(tokens[i]))));
+  const vocab = candidates.filter((i) =>
     preferNormalized.has(normalize(tokenCore(tokens[i]))),
   );
-  const pickFrom = preferred.length ? preferred : candidates;
+  const pickFrom = grammar.length ? grammar : vocab.length ? vocab : candidates;
   const blankIndex = pickFrom[Math.floor(Math.random() * pickFrom.length)];
   return { tokens, blankIndex, answer: tokenCore(tokens[blankIndex]) };
 }

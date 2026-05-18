@@ -65,8 +65,8 @@ function nextStabilityLapse(d: number, s: number, r: number): number {
   return clamp(post, 0.1, s); // never exceeds pre-lapse stability
 }
 
-function intervalDays(stability: number): number {
-  const raw = (stability / FACTOR) * (REQUEST_RETENTION ** (1 / DECAY) - 1);
+function intervalDays(stability: number, retention: number): number {
+  const raw = (stability / FACTOR) * (retention ** (1 / DECAY) - 1);
   return clamp(Math.round(raw), 1, MAX_INTERVAL);
 }
 
@@ -94,6 +94,7 @@ export function schedule(
   prev: CardState | undefined | null,
   grade: Grade,
   now: number = Date.now(),
+  retention: number = REQUEST_RETENTION,
 ): CardState {
   const g = gradeNum(grade);
   const fresh = isNew(prev);
@@ -123,7 +124,7 @@ export function schedule(
     out.dueAt = now + 5 * 60_000; // short learning step → resurfaces this session
   } else {
     out.reps = base.reps + 1;
-    out.dueAt = now + intervalDays(stability) * DAY;
+    out.dueAt = now + intervalDays(stability, retention) * DAY;
   }
   return out;
 }
@@ -132,10 +133,11 @@ export function schedule(
 export function previewIntervals(
   prev: CardState | undefined | null,
   now: number = Date.now(),
+  retention: number = REQUEST_RETENTION,
 ): Record<Grade, string> {
   const fmt = (g: Grade): string => {
     if (g === "again") return "<5m";
-    const d = Math.round((schedule(prev, g, now).dueAt - now) / DAY);
+    const d = Math.round((schedule(prev, g, now, retention).dueAt - now) / DAY);
     if (d >= 365) return `${Math.round(d / 365)}y`;
     if (d >= 30) return `${Math.round(d / 30)}mo`;
     return `${Math.max(1, d)}d`;

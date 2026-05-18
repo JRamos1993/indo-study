@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { confusableFor } from "@/lib/confusables";
 import { getVocabWordSet } from "@/lib/data";
 import type { Card } from "@/lib/practice-types";
 import {
@@ -15,6 +16,7 @@ import {
   wordTokens,
 } from "@/lib/quiz";
 import { useProgress } from "@/lib/progress";
+import { useSettings } from "@/lib/settings";
 import { type Grade, previewIntervals } from "@/lib/srs";
 import { playPhrase } from "@/lib/speech";
 import type { ItemContext } from "@/lib/types";
@@ -52,6 +54,10 @@ export function CardRenderer(props: {
       return <ClozeCard {...sub} />;
     case "order":
       return <OrderCard {...sub} />;
+    case "confusables":
+      return <ConfusablesCard {...sub} />;
+    case "wordbuilding":
+      return <WordBuildingCard {...sub} />;
     default:
       return <TypeCard {...sub} />;
   }
@@ -167,7 +173,7 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
   const answer = answerText(ctx, dir);
   const [revealed, setRevealed] = useState(false);
   const store = useProgress();
-  const intervals = previewIntervals(store[ctx.item.id]);
+  const intervals = previewIntervals(store[ctx.item.id], Date.now(), useSettings().targetRetention);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -444,7 +450,7 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
 function SpeakingCard({ ctx, onGrade }: SubProps) {
   const [revealed, setRevealed] = useState(false);
   const store = useProgress();
-  const intervals = previewIntervals(store[ctx.item.id]);
+  const intervals = previewIntervals(store[ctx.item.id], Date.now(), useSettings().targetRetention);
 
   useEffect(() => {
     if (!revealed) return;
@@ -686,6 +692,161 @@ function OrderCard({ ctx, onGrade }: SubProps) {
             Next
           </button>
         </div>
+      )}
+      <SourceLine ctx={ctx} />
+    </div>
+  );
+}
+
+// ── confusables (pick the right form for a meaning) ──────────────────────────
+
+function ConfusablesCard({ ctx, onGrade }: SubProps) {
+  const conf = useMemo(() => confusableFor(ctx.item.id), [ctx.item.id]);
+  const answer = ctx.item.indonesian;
+  const choices = useMemo(
+    () => (conf ? shuffle([...new Set(conf.options)]) : []),
+    [conf],
+  );
+  const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
+  }, [selected, answer, ctx.item.indonesian]);
+
+  if (!conf || choices.length < 2) {
+    return (
+      <TypeCard
+        ctx={ctx}
+        card={{ ctx, dir: "en2id", sub: "type", requeues: 0 }}
+        englishPool={[]}
+        indonesianPool={[]}
+        onGrade={onGrade}
+      />
+    );
+  }
+
+  return (
+    <div className="card p-7">
+      <Tag left="Which form?" right="Confusable" />
+      <div className="grid min-h-28 place-items-center py-4 text-center">
+        <div>
+          <p className="text-2xl font-semibold sm:text-3xl">{ctx.item.english}</p>
+          {conf.note && (
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{conf.note}</p>
+          )}
+        </div>
+      </div>
+      <div className="grid gap-2">
+        {choices.map((c, i) => {
+          const isCorrect = c === answer;
+          const isPicked = c === selected;
+          let cls =
+            "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800";
+          if (selected) {
+            if (isCorrect) cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40";
+            else if (isPicked) cls = "border-rose-500 bg-rose-50 dark:bg-rose-950/40";
+            else cls = "border-slate-200 opacity-60 dark:border-slate-800";
+          }
+          return (
+            <button
+              key={c + i}
+              disabled={!!selected}
+              onClick={() => setSelected(c)}
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${cls}`}
+            >
+              <span className="font-medium">{c}</span>
+            </button>
+          );
+        })}
+      </div>
+      {selected && (
+        <ResultBar
+          correct={selected === answer}
+          answer={answer}
+          speakText={ctx.item.indonesian}
+          note={ctx.item.note}
+          onNext={() => onGrade(selected === answer ? "good" : "again")}
+        />
+      )}
+      <SourceLine ctx={ctx} />
+    </div>
+  );
+}
+
+// ── word building (root ↔ affixed form) ──────────────────────────────────────
+
+const WB_INPUT =
+  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-indigo-900";
+
+function WordBuildingCard({ ctx, onGrade }: SubProps) {
+  const root = ctx.item.root ?? "";
+  const derived = ctx.item.indonesian;
+  const forward = useMemo(() => Math.random() < 0.5, [ctx.item.id]);
+  const answer = forward ? derived : root;
+  const [input, setInput] = useState("");
+  const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
+
+  useEffect(() => {
+    if (checked?.correct) playPhrase(derived);
+  }, [checked, derived]);
+
+  if (!root) {
+    return (
+      <TypeCard
+        ctx={ctx}
+        card={{ ctx, dir: "en2id", sub: "type", requeues: 0 }}
+        englishPool={[]}
+        indonesianPool={[]}
+        onGrade={onGrade}
+      />
+    );
+  }
+
+  return (
+    <div className="card p-7">
+      <Tag left="Word building" right={forward ? "Root → form" : "Form → root"} />
+      <div className="grid min-h-28 place-items-center py-4 text-center">
+        <div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-2xl font-semibold sm:text-3xl">
+              {forward ? root : derived}
+            </span>
+            <SpeakButton text={forward ? root : derived} size="md" />
+          </div>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            {forward ? `Build the form for: ${ctx.item.english}` : "Type the root word"}
+          </p>
+        </div>
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!checked) setChecked(checkAnswer(input, answer));
+        }}
+      >
+        <input
+          autoFocus
+          value={input}
+          disabled={!!checked}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ketik dalam Bahasa Indonesia…"
+          className={WB_INPUT}
+        />
+        {!checked && (
+          <button type="submit" className={`mt-3 ${PRIMARY}`}>
+            Check <span className="opacity-70">(Enter)</span>
+          </button>
+        )}
+      </form>
+      {checked && (
+        <ResultBar
+          correct={checked.correct}
+          fuzzy={checked.fuzzy}
+          answer={answer}
+          speakText={derived}
+          note={ctx.item.note}
+          onNext={() => onGrade(checked.correct ? (checked.fuzzy ? "hard" : "good") : "again")}
+        />
       )}
       <SourceLine ctx={ctx} />
     </div>

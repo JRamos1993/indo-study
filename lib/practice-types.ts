@@ -11,10 +11,21 @@ export type Mode =
   | "listening"
   | "speaking"
   | "cloze"
-  | "order";
+  | "order"
+  | "confusables"
+  | "wordbuilding";
 
 /** The actual exercise shown for a single card. */
-export type SubMode = "flashcards" | "mc" | "type" | "listening" | "speaking" | "cloze" | "order";
+export type SubMode =
+  | "flashcards"
+  | "mc"
+  | "type"
+  | "listening"
+  | "speaking"
+  | "cloze"
+  | "order"
+  | "confusables"
+  | "wordbuilding";
 
 export interface Card {
   ctx: ItemContext;

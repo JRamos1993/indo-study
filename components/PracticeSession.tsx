@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getAffixPairs } from "@/lib/affixes";
+import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
 import type { Card, Mode, SubMode } from "@/lib/practice-types";
-import { gradeItem, troubleItemIds, useProgress } from "@/lib/progress";
+import { type GradeUndo, gradeItem, troubleItemIds, undoGrade, useProgress } from "@/lib/progress";
 import { type Direction, type KindedText, shuffle, wordTokens } from "@/lib/quiz";
+import { useSettings } from "@/lib/settings";
 import { speechSupported } from "@/lib/speech";
 import { type Grade, isDue, isNew } from "@/lib/srs";
-import { DAILY_NEW_LIMIT, getNewIntroducedToday } from "@/lib/stats";
+import { currentStreak, getNewIntroducedToday, todayCount, useStats } from "@/lib/stats";
 import type { ItemContext } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
 import { CardRenderer } from "./cards/CardRenderer";
@@ -29,6 +32,8 @@ const MODE_LABEL: Record<Mode, string> = {
   speaking: "Speaking practice",
   cloze: "Fill in the blank",
   order: "Word order",
+  confusables: "Which form?",
+  wordbuilding: "Word building",
 };
 
 function pickDirection(ctx: ItemContext): Direction {
@@ -63,11 +68,14 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const params = useSearchParams();
   const mounted = useMounted();
   const store = useProgress();
+  const settings = useSettings();
+  const statsData = useStats();
 
   const lessonId = params.get("lesson");
   const sectionId = params.get("section");
   const trouble = params.get("trouble") === "1";
   const daily = mode === "daily";
+  const special = mode === "confusables" || mode === "wordbuilding";
   const dueOnly = mode === "mixed" || params.get("due") === "1";
 
   const { englishPool, indonesianPool } = useMemo(() => {
@@ -81,11 +89,18 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const orderedPool = useMemo<ItemContext[]>(() => {
     if (!mounted) return [];
     let base: ItemContext[];
-    if (daily) {
+    if (mode === "confusables" || mode === "wordbuilding") {
+      const src = mode === "confusables" ? getConfusableItems() : getAffixPairs();
+      base = lessonId
+        ? src.filter((c) => c.lessonId === lessonId)
+        : sectionId
+          ? src.filter((c) => c.sectionId === sectionId)
+          : src;
+    } else if (daily) {
       // Today's mix: everything due (new items capped) + trouble words.
       const allItems = getAllItems();
       const troubleSet = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
-      const allowedNew = Math.max(0, DAILY_NEW_LIMIT - getNewIntroducedToday());
+      const allowedNew = Math.max(0, settings.newPerDay - getNewIntroducedToday());
       let usedNew = 0;
       base = allItems.filter((c) => {
         const st = store[c.item.id];
@@ -105,7 +120,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     } else if (dueOnly) {
       base = getAllItems().filter((c) => isDue(store[c.item.id]));
       // Soft daily cap on brand-new items so review isn't overwhelming.
-      const allowedNew = Math.max(0, DAILY_NEW_LIMIT - getNewIntroducedToday());
+      const allowedNew = Math.max(0, settings.newPerDay - getNewIntroducedToday());
       let usedNew = 0;
       base = base.filter((c) => {
         if (isNew(store[c.item.id])) {
@@ -123,23 +138,32 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     return [...fresh, ...seen];
     // store is intentionally read once at session start (stable queue).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, daily, dueOnly, trouble, lessonId, sectionId]);
+  }, [mounted, mode, daily, dueOnly, trouble, lessonId, sectionId]);
 
   const [batchStart, setBatchStart] = useState(0);
   const [queue, setQueue] = useState<Card[]>([]);
   const [stats, setStats] = useState({ answered: 0, correct: 0 });
   const [wrong, setWrong] = useState<ItemContext[]>([]);
   const [practiceWrong, setPracticeWrong] = useState<ItemContext[] | null>(null);
+  const [lastUndo, setLastUndo] = useState<{ u: GradeUndo; card: Card; grade: Grade } | null>(
+    null,
+  );
 
   const makeCard = useCallback(
     (ctx: ItemContext): Card => {
       const speechOK = speechSupported();
       const sub = resolveSub(pickSub(mode), ctx, speechOK);
       const dir: Direction =
-        sub === "listening" ? "id2en" : sub === "speaking" ? "en2id" : pickDirection(ctx);
+        sub === "listening"
+          ? "id2en"
+          : sub === "speaking"
+            ? "en2id"
+            : settings.defaultDirection !== "auto"
+              ? settings.defaultDirection
+              : pickDirection(ctx);
       return { ctx, dir, sub, requeues: 0 };
     },
-    [mode],
+    [mode, settings.defaultDirection],
   );
 
   useEffect(() => {
@@ -147,6 +171,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     setQueue(source.map(makeCard));
     setStats({ answered: 0, correct: 0 });
     setWrong([]);
+    setLastUndo(null);
   }, [orderedPool, batchStart, practiceWrong, makeCard]);
 
   const current = queue[0];
@@ -184,6 +209,25 @@ export function PracticeSession({ mode }: { mode: Mode }) {
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             {stats.correct} / {total} correct · {acc}% accuracy
           </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {currentStreak(statsData)}🔥 streak · {todayCount(statsData)}/{settings.dailyGoal}{" "}
+            today
+          </p>
+          {wrong.length > 0 && (
+            <div className="mx-auto mt-5 max-w-sm rounded-xl bg-rose-50 px-4 py-3 text-left text-sm dark:bg-rose-950/30">
+              <p className="mb-1 font-semibold text-rose-700 dark:text-rose-300">
+                Focus next time
+              </p>
+              <ul className="space-y-0.5 text-slate-700 dark:text-slate-300">
+                {wrong.slice(0, 6).map((w) => (
+                  <li key={w.item.id}>
+                    <span className="font-medium">{w.item.indonesian}</span> —{" "}
+                    {w.item.english}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {wrong.length > 0 && (
               <button
@@ -223,7 +267,8 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   }
 
   const advance = (grade: Grade) => {
-    gradeItem(current.ctx.item.id, grade);
+    const u = gradeItem(current.ctx.item.id, grade);
+    setLastUndo({ u, card: current, grade });
     setStats((s) => ({ answered: s.answered + 1, correct: s.correct + (grade === "again" ? 0 : 1) }));
     if (grade === "again") {
       setWrong((w) =>
@@ -237,6 +282,18 @@ export function PracticeSession({ mode }: { mode: Mode }) {
       }
       return rest;
     });
+  };
+
+  const undoLast = () => {
+    if (!lastUndo) return;
+    undoGrade(lastUndo.u);
+    setStats((s) => ({
+      answered: Math.max(0, s.answered - 1),
+      correct: Math.max(0, s.correct - (lastUndo.grade === "again" ? 0 : 1)),
+    }));
+    setWrong((w) => w.filter((x) => x.item.id !== lastUndo.card.ctx.item.id));
+    setQueue((q) => [{ ...lastUndo.card, requeues: 0 }, ...q]);
+    setLastUndo(null);
   };
 
   const totalThisBatch = (practiceWrong ?? orderedPool.slice(batchStart, batchStart + SESSION_CAP))
@@ -262,6 +319,17 @@ export function PracticeSession({ mode }: { mode: Mode }) {
           />
         </div>
       </div>
+
+      {lastUndo && (
+        <div className="mb-2 text-right">
+          <button
+            onClick={undoLast}
+            className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-indigo-600 hover:underline"
+          >
+            ↩ Undo last grade
+          </button>
+        </div>
+      )}
 
       <CardRenderer
         key={`${current.ctx.item.id}-${current.sub}-${current.requeues}-${stats.answered}`}

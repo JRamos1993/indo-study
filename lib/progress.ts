@@ -12,7 +12,8 @@ import {
   migrateState,
   schedule,
 } from "@/lib/srs";
-import { recordReview } from "@/lib/stats";
+import { getSettings } from "@/lib/settings";
+import { recordReview, undoReview } from "@/lib/stats";
 
 const KEY = "indo-study:progress:v1";
 
@@ -73,15 +74,37 @@ export function useProgress(): ProgressStore {
   return useSyncExternalStore(subscribe, ensure, () => EMPTY);
 }
 
-export function gradeItem(itemId: string, grade: Grade): void {
+export interface GradeUndo {
+  prev: Record<string, CardState | undefined>;
+  wasNew: boolean;
+}
+
+export function gradeItem(itemId: string, grade: Grade): GradeUndo {
   const store = ensure();
   const wasNew = isNew(store[itemId]);
-  const next = schedule(store[itemId], grade);
-  const updated: ProgressStore = { ...store, [itemId]: next };
-  // Cross-lesson duplicates share progress.
-  for (const peer of duplicateGroups[itemId] ?? []) updated[peer] = next;
+  const ids = [itemId, ...(duplicateGroups[itemId] ?? [])];
+  const prev: Record<string, CardState | undefined> = {};
+  for (const id of ids) prev[id] = store[id];
+
+  const next = schedule(store[itemId], grade, Date.now(), getSettings().targetRetention);
+  const updated: ProgressStore = { ...store };
+  for (const id of ids) updated[id] = next; // duplicates share progress
   commit(updated);
   recordReview(wasNew);
+  return { prev, wasNew };
+}
+
+/** Revert a single gradeItem (misclick recovery). */
+export function undoGrade(u: GradeUndo): void {
+  const store = ensure();
+  const updated: ProgressStore = { ...store };
+  for (const id in u.prev) {
+    const v = u.prev[id];
+    if (v === undefined) delete updated[id];
+    else updated[id] = v;
+  }
+  commit(updated);
+  undoReview(u.wasNew);
 }
 
 export function resetAllProgress(): void {

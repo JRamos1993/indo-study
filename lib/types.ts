@@ -6,6 +6,8 @@ export interface RawItem {
   en: string;
   kind: ItemKind;
   note?: string;
+  /** Indonesian root this is an affixed form of (e.g. "membeli" → "beli"). */
+  root?: string;
 }
 
 export interface RawSection {
@@ -29,6 +31,7 @@ export interface Item {
   english: string;
   kind: ItemKind;
   note?: string;
+  root?: string;
 }
 
 export interface Section {

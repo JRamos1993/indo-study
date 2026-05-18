@@ -30,6 +30,7 @@ export const lessons: Lesson[] = RAW_LESSONS.map((rl, li) => ({
       english: ri.en,
       kind: ri.kind,
       note: ri.note,
+      root: ri.root,
     })),
   })),
 }));

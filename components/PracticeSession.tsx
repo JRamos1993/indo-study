@@ -131,6 +131,13 @@ export function PracticeSession({ mode }: { mode: Mode }) {
       });
     } else {
       base = getScopedItems({ lessonId, sectionId });
+      // Cloze and word-order only work on multi-word sentences — keep the
+      // dedicated routes on-label instead of downgrading most cards to typing.
+      if (mode === "cloze" || mode === "order") {
+        base = base.filter(
+          (c) => c.item.kind === "sentence" && wordTokens(c.item.indonesian).length >= 3,
+        );
+      }
     }
     const fresh: ItemContext[] = [];
     const seen: ItemContext[] = [];

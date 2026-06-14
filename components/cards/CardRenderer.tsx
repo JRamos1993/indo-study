@@ -781,7 +781,9 @@ const WB_INPUT =
 function WordBuildingCard({ ctx, onGrade }: SubProps) {
   const root = ctx.item.root ?? "";
   const derived = ctx.item.indonesian;
-  const forward = useMemo(() => Math.random() < 0.5, [ctx.item.id]);
+  // One stable random direction per card (the card remounts per item).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const forward = useMemo(() => Math.random() < 0.5, []);
   const answer = forward ? derived : root;
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);

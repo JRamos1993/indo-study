@@ -56,7 +56,7 @@ export const lesson: RawLesson = {
         { idn: "terlalu", en: "too (excessive)", kind: "vocab" },
         { idn: "ini", en: "this", kind: "vocab" },
         { idn: "itu", en: "that", kind: "vocab" },
-        { idn: "yang", en: "which / that (relativizer)", kind: "vocab" },
+        { idn: "yang", en: "that / which (relativizer)", kind: "vocab" },
         { idn: "ada", en: "there is / to have", kind: "vocab" },
       ],
     },

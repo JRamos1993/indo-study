@@ -1,7 +1,7 @@
 // Minimal offline-capable service worker for Indo Study.
 // Bump CACHE when shipping changes to drop stale caches.
-const CACHE = "indo-study-v1";
-const SHELL = ["/", "/today", "/stats"];
+const CACHE = "indo-study-v2";
+const SHELL = ["/", "/today", "/stats", "/glossary", "/settings"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

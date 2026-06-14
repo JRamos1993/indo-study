@@ -19,7 +19,11 @@ let byId: Map<string, Confusable> | null = null;
 let items: ItemContext[] | null = null;
 
 function build(): void {
-  const all = getAllItems().filter((c) => c.item.kind === "vocab");
+  // Vocab only, and never bound morphemes (e.g. -ku/-mu/-nya): a suffix makes a
+  // confusing standalone multiple-choice option.
+  const all = getAllItems().filter(
+    (c) => c.item.kind === "vocab" && !c.item.indonesian.startsWith("-"),
+  );
   const groups = new Map<string, ItemContext[]>();
   const push = (key: string, c: ItemContext) => {
     const g = groups.get(key);

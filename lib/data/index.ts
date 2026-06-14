@@ -1,17 +1,36 @@
 import { normalize, wordTokens } from "@/lib/quiz";
 import type { ItemContext, Lesson, RawLesson } from "@/lib/types";
-import { lesson as lesson20260511 } from "./lesson-2026-05-11";
-import { lesson as lesson20260512 } from "./lesson-2026-05-12";
+import { lesson as u01 } from "./unit-01-greetings";
+import { lesson as u02 } from "./unit-02-pronouns";
+import { lesson as u03 } from "./unit-03-questions";
+import { lesson as u04 } from "./unit-04-numbers";
+import { lesson as u05 } from "./unit-05-time";
+import { lesson as u06 } from "./unit-06-family";
+import { lesson as u07 } from "./unit-07-verbs";
+import { lesson as u08 } from "./unit-08-adjectives";
+import { lesson as u09 } from "./unit-09-food";
+import { lesson as u10 } from "./unit-10-places";
+import { lesson as u11 } from "./unit-11-home";
+import { lesson as u12 } from "./unit-12-body-health";
+import { lesson as u13 } from "./unit-13-colors-clothes";
+import { lesson as u14 } from "./unit-14-nature";
+import { lesson as u15 } from "./unit-15-work-school";
+import { lesson as u16 } from "./unit-16-phrases";
+import { lesson as u17 } from "./unit-17-grammar-words";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Adding a new class:
-//   1. Create lib/data/lesson-YYYY-MM-DD.ts exporting `lesson: RawLesson`
-//      (copy the shape of an existing file — sections with vocab/sentence items).
-//   2. Import it below and append to RAW_LESSONS in chronological order.
+// Content = a curated beginner Indonesian curriculum, organised as themed units
+// (each file exports `lesson: RawLesson`). To add or extend a unit:
+//   1. Create lib/data/unit-NN-topic.ts (copy the shape of an existing file —
+//      sections of vocab/sentence items; tag affixed forms with `root`).
+//   2. Import it below and add it to RAW_LESSONS in display order.
 // Item ids are generated from position, so keep section/item order stable once
-// authored (reordering would reset spaced-repetition progress for moved items).
+// authored (reordering resets spaced-repetition progress for moved items).
 // ─────────────────────────────────────────────────────────────────────────────
-const RAW_LESSONS: RawLesson[] = [lesson20260511, lesson20260512];
+const RAW_LESSONS: RawLesson[] = [
+  u01, u02, u03, u04, u05, u06, u07, u08, u09,
+  u10, u11, u12, u13, u14, u15, u16, u17,
+];
 
 export const lessons: Lesson[] = RAW_LESSONS.map((rl, li) => ({
   id: rl.id,

@@ -1,0 +1,71 @@
+import type { RawLesson } from "@/lib/types";
+
+export const lesson: RawLesson = {
+  id: "u09-food",
+  date: "unit-09",
+  title: "Food & Drink",
+  sections: [
+    {
+      titleEn: "Meals & Staples",
+      titleId: "Makanan Pokok",
+      notes: ["nasi = cooked rice (the staple). 'makan' covers eating any meal; 'sarapan' = to have breakfast."],
+      items: [
+        { idn: "makanan", en: "food", kind: "vocab", root: "makan" },
+        { idn: "minuman", en: "drink", kind: "vocab", root: "minum" },
+        { idn: "nasi", en: "cooked rice", kind: "vocab" },
+        { idn: "roti", en: "bread", kind: "vocab" },
+        { idn: "mi", en: "noodles", kind: "vocab" },
+        { idn: "telur", en: "egg", kind: "vocab" },
+        { idn: "daging", en: "meat", kind: "vocab" },
+        { idn: "ayam", en: "chicken", kind: "vocab" },
+        { idn: "ikan", en: "fish", kind: "vocab" },
+        { idn: "sayur", en: "vegetable", kind: "vocab" },
+        { idn: "buah", en: "fruit", kind: "vocab" },
+        { idn: "garam", en: "salt", kind: "vocab" },
+        { idn: "gula", en: "sugar", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Meals & Drinks",
+      titleId: "Waktu Makan dan Minuman",
+      items: [
+        { idn: "sarapan", en: "breakfast", kind: "vocab" },
+        { idn: "makan siang", en: "lunch", kind: "vocab" },
+        { idn: "makan malam", en: "dinner", kind: "vocab" },
+        { idn: "air", en: "water", kind: "vocab" },
+        { idn: "air putih", en: "drinking water", kind: "vocab" },
+        { idn: "kopi", en: "coffee", kind: "vocab" },
+        { idn: "teh", en: "tea", kind: "vocab" },
+        { idn: "susu", en: "milk", kind: "vocab" },
+        { idn: "jus", en: "juice", kind: "vocab" },
+        { idn: "es", en: "ice", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Taste & Eating Out",
+      titleId: "Rasa dan Makan di Luar",
+      items: [
+        { idn: "enak", en: "delicious", kind: "vocab" },
+        { idn: "manis", en: "sweet", kind: "vocab" },
+        { idn: "asin", en: "salty", kind: "vocab" },
+        { idn: "pedas", en: "spicy", kind: "vocab" },
+        { idn: "pahit", en: "bitter", kind: "vocab" },
+        { idn: "restoran", en: "restaurant", kind: "vocab" },
+        { idn: "menu", en: "menu", kind: "vocab" },
+        { idn: "lapar", en: "hungry", kind: "vocab" },
+        { idn: "kenyang", en: "full (after eating)", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Example Sentences",
+      titleId: "Contoh Kalimat",
+      items: [
+        { idn: "Saya mau nasi goreng.", en: "I want fried rice.", kind: "sentence" },
+        { idn: "Tolong, satu kopi.", en: "One coffee, please.", kind: "sentence" },
+        { idn: "Makanan ini terlalu pedas.", en: "This food is too spicy.", kind: "sentence" },
+        { idn: "Saya tidak makan daging.", en: "I don't eat meat.", kind: "sentence" },
+        { idn: "Air putih saja, terima kasih.", en: "Just water, thank you.", kind: "sentence" },
+      ],
+    },
+  ],
+};

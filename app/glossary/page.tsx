@@ -67,7 +67,7 @@ export default function GlossaryPage() {
       <p className="mb-2 text-xs text-slate-400">{results.length} shown</p>
 
       <ul className="card divide-y divide-slate-100 dark:divide-slate-800/70">
-        {results.slice(0, 400).map((c) => {
+        {results.slice(0, 800).map((c) => {
           const fam = mounted ? familiarity(store[c.item.id]) : "new";
           return (
             <li key={c.item.id} className="px-4 py-2.5 text-sm">

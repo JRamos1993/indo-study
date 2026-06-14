@@ -31,7 +31,7 @@ function normalize(s) {
 
 async function collectPhrases() {
   const files = (await readdir(dataDir)).filter(
-    (f) => f.startsWith("lesson-") && f.endsWith(".ts"),
+    (f) => f.endsWith(".ts") && f !== "index.ts",
   );
   const set = new Set();
   for (const f of files) {

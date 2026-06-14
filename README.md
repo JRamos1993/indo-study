@@ -1,10 +1,13 @@
 # Indo Study
 
-A personal Next.js app to study and test Indonesian class materials —
-flashcards, multiple-choice, type-the-answer, fill-in-the-blank, listening,
-speaking, word-order, spaced repetition, a one-tap daily session, stats, and a
-pronunciation guide. Local-first: progress is stored in the browser
-(`localStorage`), no backend or account.
+A personal Next.js app to learn and test beginner Indonesian — flashcards,
+multiple-choice, type-the-answer, fill-in-the-blank, listening, speaking,
+word-order, confusable-pairs, word-building, FSRS spaced repetition, a one-tap
+daily session, stats, and a pronunciation guide. Local-first: progress is
+stored in the browser (`localStorage`), no backend or account.
+
+Content is a curated beginner (A1–A2) curriculum of ~17 themed units in
+`lib/data/unit-*.ts`.
 
 ## Run locally
 
@@ -47,9 +50,10 @@ keyless Google Translate TTS — unofficial, may rate-limit; incremental, so
 re-run after adding a lesson). Commit the generated files so Vercel serves
 them. The app works without this step (Web Speech fallback).
 
-## Adding a class
+## Adding or extending content
 
-Add `lib/data/lesson-YYYY-MM-DD.ts` (copy an existing one's shape) and register
-it in `lib/data/index.ts`. Then optionally `npm run gen:audio`. Item ids are
-position-based, so don't reorder existing sections/items (it resets spaced-
-repetition progress for moved items).
+Add a `lib/data/unit-NN-topic.ts` file (copy an existing unit's shape — sections
+of `vocab`/`sentence` items; tag affixed forms with `root` to feed the
+word-building trainer) and register it in `lib/data/index.ts`. Then optionally
+`npm run gen:audio`. Item ids are position-based, so don't reorder existing
+sections/items (it resets spaced-repetition progress for moved items).

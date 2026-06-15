@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { confusableFor } from "@/lib/confusables";
 import { getVocabWordSet } from "@/lib/data";
+import { getLanguage } from "@/lib/languages";
 import type { Card } from "@/lib/practice-types";
 import {
   type KindedText,
+  acceptedAnswers,
   answerText,
   buildChoices,
   checkAnswer,
@@ -29,14 +31,14 @@ interface SubProps {
   ctx: ItemContext;
   card: Card;
   englishPool: KindedText[];
-  indonesianPool: KindedText[];
+  targetPool: KindedText[];
   onGrade: (g: Grade) => void;
 }
 
 export function CardRenderer(props: {
   card: Card;
   englishPool: KindedText[];
-  indonesianPool: KindedText[];
+  targetPool: KindedText[];
   onGrade: (g: Grade) => void;
 }) {
   const { card } = props;
@@ -65,6 +67,16 @@ export function CardRenderer(props: {
 
 // ── shared bits ──────────────────────────────────────────────────────────────
 
+/** Active study language presentation details. */
+function useLangMeta() {
+  const lang = getLanguage(useSettings().studyLanguage);
+  return { name: lang.name, targetPlaceholder: lang.targetPlaceholder, hasReading: lang.hasReading };
+}
+
+function dirLabel(promptIsTarget: boolean, name: string): string {
+  return promptIsTarget ? `${name} → English` : `English → ${name}`;
+}
+
 function Tag({ left, right }: { left: string; right: string }) {
   return (
     <div className="mb-3 flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400">
@@ -72,6 +84,13 @@ function Tag({ left, right }: { left: string; right: string }) {
       <span aria-hidden>·</span>
       <span>{right}</span>
     </div>
+  );
+}
+
+function Reading({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <p className="mt-1 text-sm font-normal text-slate-500 dark:text-slate-400">{text}</p>
   );
 }
 
@@ -91,7 +110,18 @@ function NoteLine({ text }: { text?: string }) {
 }
 
 function kindLabel(ctx: ItemContext) {
-  return ctx.item.kind === "sentence" ? "Sentence" : "Vocabulary";
+  switch (ctx.item.kind) {
+    case "sentence":
+      return "Sentence";
+    case "kana":
+      return "Kana";
+    case "kanji":
+      return "Kanji";
+    case "radical":
+      return "Radical";
+    default:
+      return "Vocabulary";
+  }
 }
 
 function GradeRow({
@@ -130,6 +160,7 @@ function ResultBar({
   correct,
   fuzzy,
   answer,
+  reading,
   speakText,
   note,
   onNext,
@@ -137,6 +168,7 @@ function ResultBar({
   correct: boolean;
   fuzzy?: boolean;
   answer: string;
+  reading?: string;
   speakText: string | null;
   note?: string;
   onNext: () => void;
@@ -155,6 +187,7 @@ function ResultBar({
           {answer}
           {speakText && <SpeakButton text={speakText} size="sm" />}
         </div>
+        {reading && <span className="text-xs font-normal opacity-80">{reading}</span>}
       </div>
       <NoteLine text={note} />
       <button autoFocus onClick={onNext} className={`mt-3 ${PRIMARY}`}>
@@ -164,13 +197,39 @@ function ResultBar({
   );
 }
 
+/** Big prompt text, with the reading underneath when the prompt is the target
+ *  language and the language uses readings (romaji). */
+function PromptText({
+  text,
+  showSpeaker,
+  speakText,
+  reading,
+}: {
+  text: string;
+  showSpeaker: boolean;
+  speakText: string;
+  reading?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 text-center">
+      <div className="flex items-center justify-center gap-2">
+        <span className="text-2xl font-semibold sm:text-3xl">{text}</span>
+        {showSpeaker && <SpeakButton text={speakText} size="md" />}
+      </div>
+      <Reading text={reading} />
+    </div>
+  );
+}
+
 // ── flashcards ───────────────────────────────────────────────────────────────
 
 function FlashcardCard({ ctx, card, onGrade }: SubProps) {
   const dir = card.dir;
-  const promptIsId = dir === "id2en";
+  const promptIsTarget = dir === "id2en";
   const prompt = promptText(ctx, dir);
   const answer = answerText(ctx, dir);
+  const { name, hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const [revealed, setRevealed] = useState(false);
   const store = useProgress();
   const intervals = previewIntervals(store[ctx.item.id], Date.now(), useSettings().targetRetention);
@@ -193,12 +252,14 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
 
   return (
     <div className="card p-7">
-      <Tag left={kindLabel(ctx)} right={promptIsId ? "Indonesian → English" : "English → Indonesian"} />
+      <Tag left={kindLabel(ctx)} right={dirLabel(promptIsTarget, name)} />
       <div className="grid min-h-44 place-items-center py-6">
-        <div className="flex items-center justify-center gap-2 text-center">
-          <span className="text-2xl font-semibold sm:text-3xl">{prompt}</span>
-          {promptIsId && <SpeakButton text={ctx.item.indonesian} size="md" />}
-        </div>
+        <PromptText
+          text={prompt}
+          showSpeaker={promptIsTarget}
+          speakText={ctx.item.target}
+          reading={promptIsTarget ? reading : undefined}
+        />
       </div>
       {!revealed ? (
         <button onClick={() => setRevealed(true)} className={PRIMARY}>
@@ -206,9 +267,14 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
         </button>
       ) : (
         <>
-          <div className="mb-5 flex items-center justify-center gap-2 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
-            <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">{answer}</span>
-            {!promptIsId && <SpeakButton text={ctx.item.indonesian} size="md" />}
+          <div className="mb-5 flex flex-col items-center gap-1 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">
+                {answer}
+              </span>
+              {!promptIsTarget && <SpeakButton text={ctx.item.target} size="md" />}
+            </div>
+            {!promptIsTarget && <Reading text={reading} />}
           </div>
           <NoteLine text={ctx.item.note} />
           <div className="mt-4">
@@ -223,16 +289,18 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
 
 // ── multiple choice ──────────────────────────────────────────────────────────
 
-function McCard({ ctx, card, englishPool, indonesianPool, onGrade }: SubProps) {
+function McCard({ ctx, card, englishPool, targetPool, onGrade }: SubProps) {
   const dir = card.dir;
-  const promptIsId = dir === "id2en";
+  const promptIsTarget = dir === "id2en";
   const prompt = promptText(ctx, dir);
   const answer = answerText(ctx, dir);
+  const { name, hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const [selected, setSelected] = useState<string | null>(null);
 
   const choices = useMemo(
-    () => buildChoices(answer, promptIsId ? englishPool : indonesianPool, ctx.item.kind),
-    [answer, promptIsId, englishPool, indonesianPool, ctx.item.kind],
+    () => buildChoices(answer, promptIsTarget ? englishPool : targetPool, ctx.item.kind),
+    [answer, promptIsTarget, englishPool, targetPool, ctx.item.kind],
   );
 
   useEffect(() => {
@@ -246,17 +314,19 @@ function McCard({ ctx, card, englishPool, indonesianPool, onGrade }: SubProps) {
   }, [selected, choices]);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
-  }, [selected, answer, ctx.item.indonesian]);
+    if (selected && selected === answer) playPhrase(ctx.item.target);
+  }, [selected, answer, ctx.item.target]);
 
   return (
     <div className="card p-7">
-      <Tag left={kindLabel(ctx)} right={promptIsId ? "Indonesian → English" : "English → Indonesian"} />
+      <Tag left={kindLabel(ctx)} right={dirLabel(promptIsTarget, name)} />
       <div className="grid min-h-28 place-items-center py-4">
-        <div className="flex items-center justify-center gap-2 text-center">
-          <span className="text-2xl font-semibold sm:text-3xl">{prompt}</span>
-          {promptIsId && <SpeakButton text={ctx.item.indonesian} size="md" />}
-        </div>
+        <PromptText
+          text={prompt}
+          showSpeaker={promptIsTarget}
+          speakText={ctx.item.target}
+          reading={promptIsTarget ? reading : undefined}
+        />
       </div>
       <div className="grid gap-2">
         {choices.map((c, i) => {
@@ -288,7 +358,8 @@ function McCard({ ctx, card, englishPool, indonesianPool, onGrade }: SubProps) {
         <ResultBar
           correct={selected === answer}
           answer={answer}
-          speakText={!promptIsId ? ctx.item.indonesian : null}
+          reading={!promptIsTarget ? reading : undefined}
+          speakText={!promptIsTarget ? ctx.item.target : null}
           note={ctx.item.note}
           onNext={() => onGrade(selected === answer ? "good" : "again")}
         />
@@ -302,29 +373,33 @@ function McCard({ ctx, card, englishPool, indonesianPool, onGrade }: SubProps) {
 
 function TypeCard({ ctx, card, onGrade }: SubProps) {
   const dir = card.dir;
-  const promptIsId = dir === "id2en";
+  const promptIsTarget = dir === "id2en";
   const prompt = promptText(ctx, dir);
   const answer = answerText(ctx, dir);
+  const { name, targetPlaceholder, hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
   useEffect(() => {
-    if (checked?.correct) playPhrase(ctx.item.indonesian);
-  }, [checked, ctx.item.indonesian]);
+    if (checked?.correct) playPhrase(ctx.item.target);
+  }, [checked, ctx.item.target]);
 
   return (
     <div className="card p-7">
-      <Tag left={kindLabel(ctx)} right={promptIsId ? "Indonesian → English" : "English → Indonesian"} />
+      <Tag left={kindLabel(ctx)} right={dirLabel(promptIsTarget, name)} />
       <div className="grid min-h-28 place-items-center py-4">
-        <div className="flex items-center justify-center gap-2 text-center">
-          <span className="text-2xl font-semibold sm:text-3xl">{prompt}</span>
-          {promptIsId && <SpeakButton text={ctx.item.indonesian} size="md" />}
-        </div>
+        <PromptText
+          text={prompt}
+          showSpeaker={promptIsTarget}
+          speakText={ctx.item.target}
+          reading={promptIsTarget ? reading : undefined}
+        />
       </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!checked) setChecked(checkAnswer(input, answer));
+          if (!checked) setChecked(checkAnswer(input, acceptedAnswers(ctx, dir)));
         }}
       >
         <input
@@ -332,7 +407,7 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
           value={input}
           disabled={!!checked}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={promptIsId ? "Type the English…" : "Ketik dalam Bahasa Indonesia…"}
+          placeholder={promptIsTarget ? "Type the English…" : targetPlaceholder}
           className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-indigo-900"
         />
         {!checked && (
@@ -346,7 +421,8 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
           correct={checked.correct}
           fuzzy={checked.fuzzy}
           answer={answer}
-          speakText={!promptIsId ? ctx.item.indonesian : null}
+          reading={!promptIsTarget ? reading : undefined}
+          speakText={!promptIsTarget ? ctx.item.target : null}
           note={ctx.item.note}
           onNext={() => onGrade(checked.correct ? (checked.fuzzy ? "hard" : "good") : "again")}
         />
@@ -360,6 +436,8 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
 
 function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
   const answer = ctx.item.english;
+  const { hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const [selected, setSelected] = useState<string | null>(null);
   const choices = useMemo(
     () => buildChoices(answer, englishPool, ctx.item.kind),
@@ -367,19 +445,19 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
   );
 
   useEffect(() => {
-    playPhrase(ctx.item.indonesian);
-  }, [ctx.item.indonesian]);
+    playPhrase(ctx.item.target);
+  }, [ctx.item.target]);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
-  }, [selected, answer, ctx.item.indonesian]);
+    if (selected && selected === answer) playPhrase(ctx.item.target);
+  }, [selected, answer, ctx.item.target]);
 
   return (
     <div className="card p-7">
       <Tag left="Listening" right="Choose the meaning" />
       <div className="grid min-h-28 place-items-center py-4">
         <button
-          onClick={() => playPhrase(ctx.item.indonesian)}
+          onClick={() => playPhrase(ctx.item.target)}
           className="flex items-center gap-2 rounded-full border border-indigo-300 px-5 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
         >
           <svg width={20} height={20} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -427,9 +505,12 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
         <div className="mt-4">
           <div className="rounded-xl bg-slate-50 px-4 py-3 text-center dark:bg-slate-800/60">
             <div className="flex items-center justify-center gap-2 text-lg font-semibold">
-              {ctx.item.indonesian}
-              <SpeakButton text={ctx.item.indonesian} size="sm" />
+              {ctx.item.target}
+              <SpeakButton text={ctx.item.target} size="sm" />
             </div>
+            {reading && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">{reading}</span>
+            )}
           </div>
           <ResultBar
             correct={selected === answer}
@@ -448,13 +529,15 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
 // ── speaking (self-graded) ───────────────────────────────────────────────────
 
 function SpeakingCard({ ctx, onGrade }: SubProps) {
+  const { name, hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const [revealed, setRevealed] = useState(false);
   const store = useProgress();
   const intervals = previewIntervals(store[ctx.item.id], Date.now(), useSettings().targetRetention);
 
   useEffect(() => {
     if (!revealed) return;
-    playPhrase(ctx.item.indonesian);
+    playPhrase(ctx.item.target);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "1") onGrade("again");
       if (e.key === "2") onGrade("hard");
@@ -463,16 +546,16 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [revealed, ctx.item.indonesian, onGrade]);
+  }, [revealed, ctx.item.target, onGrade]);
 
   return (
     <div className="card p-7">
-      <Tag left="Speaking" right="Say it in Indonesian" />
+      <Tag left="Speaking" right={`Say it in ${name}`} />
       <div className="grid min-h-44 place-items-center py-6 text-center">
         <div>
           <p className="text-2xl font-semibold sm:text-3xl">{ctx.item.english}</p>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Say it aloud in Indonesian, then check.
+            Say it aloud in {name}, then check.
           </p>
         </div>
       </div>
@@ -482,11 +565,14 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
         </button>
       ) : (
         <>
-          <div className="mb-5 flex items-center justify-center gap-2 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
-            <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">
-              {ctx.item.indonesian}
-            </span>
-            <SpeakButton text={ctx.item.indonesian} size="md" />
+          <div className="mb-5 flex flex-col items-center gap-1 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">
+                {ctx.item.target}
+              </span>
+              <SpeakButton text={ctx.item.target} size="md" />
+            </div>
+            <Reading text={reading} />
           </div>
           <NoteLine text={ctx.item.note} />
           <p className="mb-2 text-center text-xs text-slate-400">How did you do?</p>
@@ -502,24 +588,24 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
 
 function ClozeCard({ ctx, card, onGrade }: SubProps) {
   const cloze = useMemo(
-    () => makeCloze(ctx.item.indonesian, getVocabWordSet()),
-    [ctx.item.indonesian],
+    () => makeCloze(ctx.item.target, getVocabWordSet()),
+    [ctx.item.target],
   );
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
   useEffect(() => {
-    if (checked?.correct) playPhrase(ctx.item.indonesian);
-  }, [checked, ctx.item.indonesian]);
+    if (checked?.correct) playPhrase(ctx.item.target);
+  }, [checked, ctx.item.target]);
 
-  // Fallback (no maskable word): translate-to-Indonesian typing instead.
+  // Fallback (no maskable word): translate-to-target typing instead.
   if (!cloze) {
     return (
       <TypeCard
         ctx={ctx}
         card={{ ctx, dir: "en2id", sub: "type", requeues: card.requeues }}
         englishPool={[]}
-        indonesianPool={[]}
+        targetPool={[]}
         onGrade={onGrade}
       />
     );
@@ -569,8 +655,8 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
           >
             {checked.correct ? (checked.fuzzy ? "Close enough — correct!" : "Correct!") : "Not quite."}
             <div className="mt-1 flex items-center justify-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
-              {ctx.item.indonesian}
-              <SpeakButton text={ctx.item.indonesian} size="sm" />
+              {ctx.item.target}
+              <SpeakButton text={ctx.item.target} size="sm" />
             </div>
           </div>
           <NoteLine text={ctx.item.note} />
@@ -591,21 +677,20 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
 // ── word-order builder ───────────────────────────────────────────────────────
 
 function OrderCard({ ctx, onGrade }: SubProps) {
-  const tokens = useMemo(() => wordTokens(ctx.item.indonesian), [ctx.item.indonesian]);
+  const tokens = useMemo(() => wordTokens(ctx.item.target), [ctx.item.target]);
   const order = useMemo(() => shuffle(tokens.map((_, i) => i)), [tokens]);
   const [picked, setPicked] = useState<number[]>([]);
   const [result, setResult] = useState<null | boolean>(null);
 
   useEffect(() => {
-    if (result === true) playPhrase(ctx.item.indonesian);
-  }, [result, ctx.item.indonesian]);
+    if (result === true) playPhrase(ctx.item.target);
+  }, [result, ctx.item.target]);
 
   const pickedSet = new Set(picked);
-  const assembled = picked.map((i) => tokens[i]).join(" ");
   const allPlaced = picked.length === tokens.length;
 
   const check = (seq: number[]) => {
-    const ok = normalize(seq.map((i) => tokens[i]).join(" ")) === normalize(ctx.item.indonesian);
+    const ok = normalize(seq.map((i) => tokens[i]).join(" ")) === normalize(ctx.item.target);
     setResult(ok);
   };
 
@@ -679,8 +764,8 @@ function OrderCard({ ctx, onGrade }: SubProps) {
           >
             {result ? "Correct!" : "Not quite."}
             <div className="mt-1 flex items-center justify-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
-              {ctx.item.indonesian}
-              <SpeakButton text={ctx.item.indonesian} size="sm" />
+              {ctx.item.target}
+              <SpeakButton text={ctx.item.target} size="sm" />
             </div>
           </div>
           <NoteLine text={ctx.item.note} />
@@ -702,7 +787,9 @@ function OrderCard({ ctx, onGrade }: SubProps) {
 
 function ConfusablesCard({ ctx, onGrade }: SubProps) {
   const conf = useMemo(() => confusableFor(ctx.item.id), [ctx.item.id]);
-  const answer = ctx.item.indonesian;
+  const answer = ctx.item.target;
+  const { hasReading } = useLangMeta();
+  const reading = hasReading ? ctx.item.reading : undefined;
   const choices = useMemo(
     () => (conf ? shuffle([...new Set(conf.options)]) : []),
     [conf],
@@ -710,8 +797,8 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.indonesian);
-  }, [selected, answer, ctx.item.indonesian]);
+    if (selected && selected === answer) playPhrase(ctx.item.target);
+  }, [selected, answer, ctx.item.target]);
 
   if (!conf || choices.length < 2) {
     return (
@@ -719,7 +806,7 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
         ctx={ctx}
         card={{ ctx, dir: "en2id", sub: "type", requeues: 0 }}
         englishPool={[]}
-        indonesianPool={[]}
+        targetPool={[]}
         onGrade={onGrade}
       />
     );
@@ -763,7 +850,8 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
         <ResultBar
           correct={selected === answer}
           answer={answer}
-          speakText={ctx.item.indonesian}
+          reading={reading}
+          speakText={ctx.item.target}
           note={ctx.item.note}
           onNext={() => onGrade(selected === answer ? "good" : "again")}
         />
@@ -780,7 +868,7 @@ const WB_INPUT =
 
 function WordBuildingCard({ ctx, onGrade }: SubProps) {
   const root = ctx.item.root ?? "";
-  const derived = ctx.item.indonesian;
+  const derived = ctx.item.target;
   // One stable random direction per card (the card remounts per item).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const forward = useMemo(() => Math.random() < 0.5, []);
@@ -798,7 +886,7 @@ function WordBuildingCard({ ctx, onGrade }: SubProps) {
         ctx={ctx}
         card={{ ctx, dir: "en2id", sub: "type", requeues: 0 }}
         englishPool={[]}
-        indonesianPool={[]}
+        targetPool={[]}
         onGrade={onGrade}
       />
     );

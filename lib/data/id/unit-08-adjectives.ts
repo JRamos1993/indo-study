@@ -1,0 +1,73 @@
+import type { RawLesson } from "@/lib/types";
+
+export const lesson: RawLesson = {
+  id: "u08-adjectives",
+  date: "unit-08",
+  title: "Adjectives & Opposites",
+  sections: [
+    {
+      titleEn: "Describing Things",
+      titleId: "Menggambarkan Benda",
+      notes: ["In Indonesian the adjective comes AFTER the noun: 'rumah besar' = big house (literally house-big)."],
+      items: [
+        { target: "besar", en: "big", kind: "vocab" },
+        { target: "kecil", en: "small", kind: "vocab" },
+        { target: "panjang", en: "long", kind: "vocab" },
+        { target: "pendek", en: "short", kind: "vocab" },
+        { target: "tinggi", en: "tall / high", kind: "vocab" },
+        { target: "rendah", en: "low", kind: "vocab" },
+        { target: "baru", en: "new", kind: "vocab" },
+        { target: "lama", en: "old (of things) / a long time", kind: "vocab" },
+        { target: "tua", en: "old (of people)", kind: "vocab" },
+        { target: "muda", en: "young", kind: "vocab" },
+        { target: "mahal", en: "expensive", kind: "vocab" },
+        { target: "murah", en: "cheap", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Feelings & Quality",
+      titleId: "Perasaan dan Kualitas",
+      notes: ["lama means 'old' for objects and also 'a long time'; tua means 'old' for living things."],
+      items: [
+        { target: "baik", en: "good / kind", kind: "vocab" },
+        { target: "buruk", en: "bad", kind: "vocab" },
+        { target: "bagus", en: "nice / great", kind: "vocab" },
+        { target: "jelek", en: "ugly / bad", kind: "vocab" },
+        { target: "senang", en: "happy / glad", kind: "vocab" },
+        { target: "sedih", en: "sad", kind: "vocab" },
+        { target: "marah", en: "angry", kind: "vocab" },
+        { target: "lelah", en: "tired", kind: "vocab" },
+        { target: "lapar", en: "hungry", kind: "vocab" },
+        { target: "haus", en: "thirsty", kind: "vocab" },
+        { target: "sakit", en: "sick / hurt", kind: "vocab" },
+        { target: "sehat", en: "healthy", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "More Opposites",
+      titleId: "Lawan Kata",
+      items: [
+        { target: "panas", en: "hot", kind: "vocab" },
+        { target: "dingin", en: "cold", kind: "vocab" },
+        { target: "cepat", en: "fast", kind: "vocab" },
+        { target: "lambat", en: "slow", kind: "vocab" },
+        { target: "mudah", en: "easy", kind: "vocab" },
+        { target: "sulit", en: "difficult", kind: "vocab" },
+        { target: "penuh", en: "full", kind: "vocab" },
+        { target: "kosong", en: "empty", kind: "vocab" },
+        { target: "benar", en: "correct / true", kind: "vocab" },
+        { target: "salah", en: "wrong", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Example Sentences",
+      titleId: "Contoh Kalimat",
+      items: [
+        { target: "Rumah ini sangat besar.", en: "This house is very big.", kind: "sentence" },
+        { target: "Makanan ini enak sekali.", en: "This food is very delicious.", kind: "sentence" },
+        { target: "Saya sangat lelah hari ini.", en: "I am very tired today.", kind: "sentence" },
+        { target: "Bahasa Indonesia tidak sulit.", en: "Indonesian is not difficult.", kind: "sentence" },
+      ],
+    },
+  ],
+};

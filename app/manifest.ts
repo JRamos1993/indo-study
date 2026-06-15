@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Indo Study — learn & test your Indonesian",
-    short_name: "Indo Study",
-    description: "Study and test your Indonesian class materials offline.",
+    name: "Lingo Study — learn Indonesian & Japanese",
+    short_name: "Lingo Study",
+    description: "Study and test beginner Indonesian and Japanese offline.",
     start_url: "/",
     display: "standalone",
     background_color: "#0f172a",

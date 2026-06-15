@@ -1,7 +1,10 @@
 // Pronunciation: prefer bundled pre-generated audio (reliable on every device);
 // fall back to the Web Speech API; degrade to a no-op if neither is available.
+// Speech is language-aware: the voice/lang follow the active study language.
 
 import { audioFileFor, hasBundledAudio } from "@/lib/audioManifest";
+import { getLanguage } from "@/lib/languages";
+import { getStudyLanguage } from "@/lib/settings";
 
 export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
@@ -10,6 +13,10 @@ export function speechSupported(): boolean {
 /** True if we can pronounce anything at all (bundled audio or a voice). */
 export function pronunciationAvailable(): boolean {
   return hasBundledAudio() || speechSupported();
+}
+
+function activeSpeechLang(): string {
+  return getLanguage(getStudyLanguage()).speechLang;
 }
 
 let currentAudio: HTMLAudioElement | null = null;
@@ -32,12 +39,14 @@ export function playPhrase(text: string): void {
   speak(text);
 }
 
-function indonesianVoice(): SpeechSynthesisVoice | null {
+/** Pick a voice matching the BCP-47 language prefix (e.g. "ja", "id"). */
+function voiceFor(speechLang: string): SpeechSynthesisVoice | null {
   if (!speechSupported()) return null;
+  const prefix = speechLang.split("-")[0].toLowerCase();
   const voices = window.speechSynthesis.getVoices();
   return (
-    voices.find((v) => /^id([-_]|$)/i.test(v.lang)) ??
-    voices.find((v) => /indonesia/i.test(v.name)) ??
+    voices.find((v) => v.lang.toLowerCase() === speechLang.toLowerCase()) ??
+    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ??
     null
   );
 }
@@ -53,17 +62,13 @@ export function warmUpVoices(): void {
   });
 }
 
-export function hasIndonesianVoice(): boolean {
-  return indonesianVoice() !== null;
-}
-
-export function speak(text: string): void {
+export function speak(text: string, speechLang: string = activeSpeechLang()): void {
   if (!speechSupported() || !text.trim()) return;
   const synth = window.speechSynthesis;
   synth.cancel(); // stop anything in progress
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "id-ID";
-  const v = indonesianVoice();
+  u.lang = speechLang;
+  const v = voiceFor(speechLang);
   if (v) u.voice = v;
   u.rate = 0.92;
   u.pitch = 1;

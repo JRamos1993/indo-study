@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { SpeakButton } from "@/components/SpeakButton";
 import { getAllItems, getLessons } from "@/lib/data";
+import { getLanguage } from "@/lib/languages";
 import { useProgress } from "@/lib/progress";
 import { normalize } from "@/lib/quiz";
+import { useSettings } from "@/lib/settings";
 import { type Familiarity, familiarity } from "@/lib/srs";
 import { useMounted } from "@/lib/useMounted";
 
@@ -17,8 +19,10 @@ const DOT: Record<Familiarity, string> = {
 };
 
 export default function GlossaryPage() {
-  const all = useMemo(() => getAllItems(), []);
-  const lessons = useMemo(() => getLessons(), []);
+  const lang = useSettings().studyLanguage;
+  const langName = getLanguage(lang).name;
+  const all = getAllItems(lang);
+  const lessons = getLessons(lang);
   const store = useProgress();
   const mounted = useMounted();
   const [q, setQ] = useState("");
@@ -28,7 +32,11 @@ export default function GlossaryPage() {
   const results = all.filter((c) => {
     if (lesson && c.lessonId !== lesson) return false;
     if (!nq) return true;
-    return normalize(c.item.indonesian).includes(nq) || normalize(c.item.english).includes(nq);
+    return (
+      normalize(c.item.target).includes(nq) ||
+      normalize(c.item.english).includes(nq) ||
+      (c.item.reading ? normalize(c.item.reading).includes(nq) : false)
+    );
   });
 
   return (
@@ -47,7 +55,7 @@ export default function GlossaryPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Indonesian or English…"
+          placeholder={`Search ${langName} or English…`}
           className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900"
         />
         <select
@@ -75,8 +83,11 @@ export default function GlossaryPage() {
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full sm:mt-0 ${DOT[fam]}`} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
                   <div className="flex min-w-0 items-center gap-2 sm:flex-1">
-                    <span className="font-medium">{c.item.indonesian}</span>
-                    <SpeakButton text={c.item.indonesian} size="sm" />
+                    <span className="font-medium">{c.item.target}</span>
+                    {c.item.reading && (
+                      <span className="text-xs text-slate-400">{c.item.reading}</span>
+                    )}
+                    <SpeakButton text={c.item.target} size="sm" />
                   </div>
                   <span className="text-slate-600 dark:text-slate-400 sm:flex-1 sm:text-right">
                     {c.item.english}

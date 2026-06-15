@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
 import { type DirectionPref, type ThemePref, updateSettings, useSettings } from "@/lib/settings";
 import { resetStats } from "@/lib/stats";
@@ -23,6 +24,23 @@ export default function SettingsPage() {
         <div className="card grid h-40 place-items-center text-slate-400">Loading…</div>
       ) : (
         <div className="space-y-4">
+          <Row label="Study language" hint="Which language you're learning">
+            <select
+              value={s.studyLanguage}
+              onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
+              className={selectCls}
+            >
+              {LANG_IDS.map((id) => {
+                const c = getLanguage(id);
+                return (
+                  <option key={id} value={id}>
+                    {c.flag} {c.name}
+                  </option>
+                );
+              })}
+            </select>
+          </Row>
+
           <Row label="Daily goal" hint="Reviews per day for the streak ring">
             <Stepper
               value={s.dailyGoal}

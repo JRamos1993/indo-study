@@ -10,10 +10,11 @@ import { currentStreak, todayCount, useStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
 export default function StatsPage() {
-  const lessons = useMemo(() => getLessons(), []);
+  const settings = useSettings();
+  const lessons = getLessons(settings.studyLanguage);
   const store = useProgress();
   const stats = useStats();
-  const dailyGoal = useSettings().dailyGoal;
+  const dailyGoal = settings.dailyGoal;
   const mounted = useMounted();
 
   const allIds = useMemo(

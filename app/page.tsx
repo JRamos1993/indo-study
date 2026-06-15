@@ -2,40 +2,50 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { getLessons } from "@/lib/data";
 import { hasWordBuilding } from "@/lib/affixes";
+import { hasConfusables } from "@/lib/confusables";
+import { getLessons } from "@/lib/data";
+import { getLanguage } from "@/lib/languages";
 import { summarize, troubleItemIds, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
 import { currentStreak, todayCount, useStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
-const PRACTICE_MODES: { href: string; label: string; desc: string }[] = [
-  { href: "/study/flashcards", label: "Flashcards", desc: "Flip & self-rate" },
-  { href: "/quiz/mc", label: "Multiple choice", desc: "Pick the meaning" },
-  { href: "/quiz/type", label: "Type the answer", desc: "Active recall" },
-  { href: "/quiz/cloze", label: "Fill the blank", desc: "Sentence grammar" },
-  { href: "/quiz/confusables", label: "Which form?", desc: "Confusable pairs" },
-  { href: "/study/listening", label: "Listening", desc: "Hear & choose" },
-  { href: "/study/speaking", label: "Speaking", desc: "Say it aloud" },
-  { href: "/study/order", label: "Word order", desc: "Build sentences" },
-  ...(hasWordBuilding()
-    ? [{ href: "/study/word-building", label: "Word building", desc: "Roots & affixes" }]
-    : []),
-  { href: "/review", label: "Spaced review", desc: "Smart mix, all due" },
-];
-
 export default function Dashboard() {
-  const lessons = useMemo(() => getLessons(), []);
   const store = useProgress();
   const mounted = useMounted();
+  const stats = useStats();
+  const settings = useSettings();
+  const lang = settings.studyLanguage;
+  const langCfg = getLanguage(lang);
+  const f = langCfg.features;
+  const dailyGoal = settings.dailyGoal;
+
+  const lessons = getLessons(lang);
+
+  const practiceModes = useMemo(() => {
+    const m: { href: string; label: string; desc: string }[] = [
+      { href: "/study/flashcards", label: "Flashcards", desc: "Flip & self-rate" },
+      { href: "/quiz/mc", label: "Multiple choice", desc: "Pick the meaning" },
+      { href: "/quiz/type", label: "Type the answer", desc: "Active recall" },
+      { href: "/study/listening", label: "Listening", desc: "Hear & choose" },
+      { href: "/study/speaking", label: "Speaking", desc: "Say it aloud" },
+    ];
+    if (f.kana) m.push({ href: "/study/kana", label: "Alphabet (kana)", desc: "Hiragana & katakana" });
+    if (f.kanji) m.push({ href: "/study/kanji", label: "Kanji", desc: "Characters & readings" });
+    if (f.cloze) m.push({ href: "/quiz/cloze", label: "Fill the blank", desc: "Sentence grammar" });
+    if (f.order) m.push({ href: "/study/order", label: "Word order", desc: "Build sentences" });
+    if (hasConfusables(lang)) m.push({ href: "/quiz/confusables", label: "Which form?", desc: "Confusable pairs" });
+    if (f.wordBuilding && hasWordBuilding(lang))
+      m.push({ href: "/study/word-building", label: "Word building", desc: "Roots & affixes" });
+    m.push({ href: "/review", label: "Spaced review", desc: "Smart mix, all due" });
+    return m;
+  }, [lang, f.kana, f.kanji, f.cloze, f.order, f.wordBuilding]);
 
   const allIds = useMemo(
     () => lessons.flatMap((l) => l.sections.flatMap((s) => s.items.map((i) => i.id))),
     [lessons],
   );
-  const stats = useStats();
-  const settings = useSettings();
-  const dailyGoal = settings.dailyGoal;
   const overall = summarize(store, allIds);
   const showStats = mounted;
   const troubleCount = mounted ? troubleItemIds(store, allIds).length : 0;
@@ -46,9 +56,11 @@ export default function Dashboard() {
   return (
     <div>
       <header className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Selamat belajar! 🇮🇩</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {langCfg.greeting} {langCfg.flag}
+        </h1>
         <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Study and test yourself on your Indonesian class materials.
+          Learn and test your {langCfg.name}. Switch language any time in the menu.
         </p>
       </header>
 
@@ -134,7 +146,7 @@ export default function Dashboard() {
         Ways to practice
       </h2>
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {PRACTICE_MODES.map((m) => (
+        {practiceModes.map((m) => (
           <Link
             key={m.href}
             href={m.href}
@@ -259,8 +271,9 @@ export default function Dashboard() {
         </p>
         <p>
           Progress is saved in this browser only. Audio uses your device&apos;s built-in
-          Indonesian voice (install an Indonesian TTS voice in your OS settings if you hear
-          nothing).
+          {" "}
+          {langCfg.name} voice when a matching TTS voice is installed; otherwise bundled audio
+          is used.
         </p>
       </footer>
     </div>

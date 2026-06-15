@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { LessonBrowser } from "@/components/LessonBrowser";
-import { getLesson, getLessons } from "@/lib/data";
+import { getAllLessons, getLesson } from "@/lib/data";
 
 export function generateStaticParams() {
-  return getLessons().map((l) => ({ lessonId: l.id }));
+  return getAllLessons().map((l) => ({ lessonId: l.id }));
 }
 
 export default async function LessonPage({

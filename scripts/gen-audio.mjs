@@ -29,21 +29,38 @@ function normalize(s) {
     .trim();
 }
 
+// Each language's units live under lib/data/<lang>/; the folder name is the TTS
+// language code passed to Google Translate (id, ja, ...).
+const LANG_DIRS = ["id", "ja"];
+
 async function collectPhrases() {
-  const files = (await readdir(dataDir)).filter(
-    (f) => f.endsWith(".ts") && f !== "index.ts",
-  );
-  const set = new Set();
-  for (const f of files) {
-    const src = await readFile(join(dataDir, f), "utf8");
-    for (const m of src.matchAll(/idn:\s*"([^"]+)"/g)) set.add(m[1]);
+  const seen = new Set();
+  const out = [];
+  for (const lang of LANG_DIRS) {
+    const dir = join(dataDir, lang);
+    let files;
+    try {
+      files = (await readdir(dir)).filter((f) => f.endsWith(".ts"));
+    } catch {
+      continue; // language folder not present
+    }
+    for (const f of files) {
+      const src = await readFile(join(dir, f), "utf8");
+      for (const m of src.matchAll(/target"?\s*:\s*"((?:[^"\\]|\\.)*)"/g)) {
+        const text = m[1].replace(/\\"/g, '"');
+        const key = `${lang}|${text}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ text, tl: lang });
+      }
+    }
   }
-  return [...set];
+  return out;
 }
 
-async function ttsGoogle(text) {
+async function ttsGoogle(text, tl) {
   const url =
-    "https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=" +
+    `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=` +
     encodeURIComponent(text);
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0", Referer: "https://translate.google.com/" },
@@ -64,26 +81,27 @@ async function main() {
   let skipped = 0;
   let failed = 0;
 
-  for (const phrase of phrases) {
-    const id = createHash("sha1").update(phrase).digest("hex").slice(0, 16);
+  for (const { text, tl } of phrases) {
+    // Hash by text only so existing clips stay valid; scripts don't collide.
+    const id = createHash("sha1").update(text).digest("hex").slice(0, 16);
     const file = `${id}.mp3`;
     const path = join(outDir, file);
-    manifest[normalize(phrase)] = file;
+    manifest[normalize(text)] = file;
 
     if (existsSync(path)) {
       skipped += 1;
       continue;
     }
     try {
-      const buf = await ttsGoogle(phrase);
+      const buf = await ttsGoogle(text, tl);
       await writeFile(path, buf);
       made += 1;
-      process.stdout.write(`+ ${phrase}\n`);
+      process.stdout.write(`+ [${tl}] ${text}\n`);
       await sleep(350);
     } catch (e) {
       failed += 1;
-      delete manifest[normalize(phrase)]; // no file -> Web Speech fallback
-      process.stdout.write(`! skip "${phrase}" (${e.message})\n`);
+      delete manifest[normalize(text)]; // no file -> Web Speech fallback
+      process.stdout.write(`! skip "${text}" (${e.message})\n`);
     }
   }
 

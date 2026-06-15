@@ -1,96 +1,100 @@
+import { DEFAULT_LANG, LANGUAGES, LANG_IDS, type LangId, isLangId } from "@/lib/languages";
 import { normalize, wordTokens } from "@/lib/quiz";
 import type { ItemContext, Lesson, RawLesson } from "@/lib/types";
-import { lesson as u01 } from "./unit-01-greetings";
-import { lesson as u02 } from "./unit-02-pronouns";
-import { lesson as u03 } from "./unit-03-questions";
-import { lesson as u04 } from "./unit-04-numbers";
-import { lesson as u05 } from "./unit-05-time";
-import { lesson as u06 } from "./unit-06-family";
-import { lesson as u07 } from "./unit-07-verbs";
-import { lesson as u08 } from "./unit-08-adjectives";
-import { lesson as u09 } from "./unit-09-food";
-import { lesson as u10 } from "./unit-10-places";
-import { lesson as u11 } from "./unit-11-home";
-import { lesson as u12 } from "./unit-12-body-health";
-import { lesson as u13 } from "./unit-13-colors-clothes";
-import { lesson as u14 } from "./unit-14-nature";
-import { lesson as u15 } from "./unit-15-work-school";
-import { lesson as u16 } from "./unit-16-phrases";
-import { lesson as u17 } from "./unit-17-grammar-words";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content = a curated beginner Indonesian curriculum, organised as themed units
-// (each file exports `lesson: RawLesson`). To add or extend a unit:
-//   1. Create lib/data/unit-NN-topic.ts (copy the shape of an existing file —
-//      sections of vocab/sentence items; tag affixed forms with `root`).
-//   2. Import it below and add it to RAW_LESSONS in display order.
-// Item ids are generated from position, so keep section/item order stable once
-// authored (reordering resets spaced-repetition progress for moved items).
+// The corpus is multi-language. Each language's themed units live under
+// lib/data/<lang>/unit-*.ts and are registered in lib/languages.ts. The data
+// functions below resolve the *active* study language (from settings) so the
+// rest of the app stays language-agnostic. Static/server paths use the
+// all-languages variants. Item ids are position-generated and namespaced per
+// language (id units start "u..", Japanese "ja.."), so they never collide and
+// progress for each language coexists in the same store.
 // ─────────────────────────────────────────────────────────────────────────────
-const RAW_LESSONS: RawLesson[] = [
-  u01, u02, u03, u04, u05, u06, u07, u08, u09,
-  u10, u11, u12, u13, u14, u15, u16, u17,
-];
 
-export const lessons: Lesson[] = RAW_LESSONS.map((rl, li) => ({
-  id: rl.id,
-  date: rl.date,
-  title: rl.title,
-  index: li,
-  sections: rl.sections.map((rs, si) => ({
-    id: `${rl.id}-s${si + 1}`,
-    index: si,
-    titleEn: rs.titleEn,
-    titleId: rs.titleId,
-    notes: rs.notes ?? [],
-    items: rs.items.map((ri, ii) => ({
-      id: `${rl.id}-s${si + 1}-i${ii + 1}`,
-      indonesian: ri.idn,
-      english: ri.en,
-      kind: ri.kind,
-      note: ri.note,
-      root: ri.root,
+const SETTINGS_KEY = "indo-study:settings:v1";
+
+/** Active language — read directly from localStorage so this module stays
+ *  server-safe and free of the "use client" settings module. */
+function activeLang(): LangId {
+  if (typeof window === "undefined") return DEFAULT_LANG;
+  try {
+    const s = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) || "{}");
+    return isLangId(s.studyLanguage) ? s.studyLanguage : DEFAULT_LANG;
+  } catch {
+    return DEFAULT_LANG;
+  }
+}
+
+function buildLessons(units: RawLesson[]): Lesson[] {
+  return units.map((rl, li) => ({
+    id: rl.id,
+    date: rl.date,
+    title: rl.title,
+    index: li,
+    sections: rl.sections.map((rs, si) => ({
+      id: `${rl.id}-s${si + 1}`,
+      index: si,
+      titleEn: rs.titleEn,
+      titleId: rs.titleId,
+      notes: rs.notes ?? [],
+      items: rs.items.map((ri, ii) => ({
+        id: `${rl.id}-s${si + 1}-i${ii + 1}`,
+        target: ri.target,
+        english: ri.en,
+        kind: ri.kind,
+        reading: ri.reading,
+        note: ri.note,
+        root: ri.root,
+      })),
     })),
-  })),
-}));
-
-export function getLessons(): Lesson[] {
-  return lessons;
+  }));
 }
 
-export function getLesson(id: string): Lesson | undefined {
-  return lessons.find((l) => l.id === id);
-}
+const lessonsByLang: Record<LangId, Lesson[]> = {
+  id: buildLessons(LANGUAGES.id.units),
+  ja: buildLessons(LANGUAGES.ja.units),
+};
 
-function buildContexts(filter?: (ctx: ItemContext) => boolean): ItemContext[] {
+function contextsOf(lessons: Lesson[]): ItemContext[] {
   const out: ItemContext[] = [];
   for (const lesson of lessons) {
     for (const section of lesson.sections) {
       for (const item of section.items) {
-        const ctx: ItemContext = {
+        out.push({
           item,
           lessonId: lesson.id,
           lessonTitle: lesson.title,
           sectionId: section.id,
           sectionTitle: `${section.titleEn} / ${section.titleId}`,
-        };
-        if (!filter || filter(ctx)) out.push(ctx);
+        });
       }
     }
   }
   return out;
 }
 
-export function getAllItems(): ItemContext[] {
-  return buildContexts();
+const contextsByLang: Record<LangId, ItemContext[]> = {
+  id: contextsOf(lessonsByLang.id),
+  ja: contextsOf(lessonsByLang.ja),
+};
+
+// ── Active-language accessors (used by client components) ─────────────────────
+
+export function getLessons(lang: LangId = activeLang()): Lesson[] {
+  return lessonsByLang[lang];
+}
+
+export function getAllItems(lang: LangId = activeLang()): ItemContext[] {
+  return contextsByLang[lang];
 }
 
 export function getLessonItems(lessonId: string): ItemContext[] {
-  return buildContexts((c) => c.lessonId === lessonId);
+  return getAllItems().filter((c) => c.lessonId === lessonId);
 }
 
 export function getSectionItems(sectionId: string): ItemContext[] {
-  return buildContexts((c) => c.sectionId === sectionId);
+  return getAllItems().filter((c) => c.sectionId === sectionId);
 }
 
 /** Resolve a scope query (used by every practice mode) to its item pool. */
@@ -105,7 +109,7 @@ export function getScopedItems(scope: {
 
 export function scopeLabel(scope: { lessonId?: string | null; sectionId?: string | null }): string {
   if (scope.sectionId) {
-    for (const l of lessons) {
+    for (const l of getAllLessons()) {
       const s = l.sections.find((x) => x.id === scope.sectionId);
       if (s) return `${s.titleEn} / ${s.titleId}`;
     }
@@ -114,21 +118,30 @@ export function scopeLabel(scope: { lessonId?: string | null; sectionId?: string
   return "All lessons";
 }
 
-export const totalItemCount = getAllItems().length;
+// ── All-languages accessors (server-safe: static params, lesson lookup) ───────
 
-// ── Cross-lesson duplicate merge ─────────────────────────────────────────────
-// The same word can appear in more than one class. Grading any copy should
-// update them all so progress is not re-ground. `duplicateGroups[id]` lists
-// every item id (including itself) that shares the same Indonesian+English.
-const canonicalKey = (idn: string, en: string) => `${normalize(idn)}|${normalize(en)}`;
+export function getAllLessons(): Lesson[] {
+  return LANG_IDS.flatMap((l) => lessonsByLang[l]);
+}
+
+/** Look up a lesson by id across every language. */
+export function getLesson(id: string): Lesson | undefined {
+  return getAllLessons().find((l) => l.id === id);
+}
+
+// ── Cross-unit duplicate merge (global across all languages) ──────────────────
+// The same word can appear in more than one unit. Grading any copy updates them
+// all so progress is not re-ground. Built once across every language; ids are
+// unique per language so groups never span languages in practice.
+const canonicalKey = (target: string, en: string) => `${normalize(target)}|${normalize(en)}`;
 
 export const duplicateGroups: Record<string, string[]> = (() => {
   const byKey = new Map<string, string[]>();
-  for (const c of getAllItems()) {
-    const k = canonicalKey(c.item.indonesian, c.item.english);
+  for (const c of getAllLessons().flatMap((l) => l.sections).flatMap((s) => s.items)) {
+    const k = canonicalKey(c.target, c.english);
     const arr = byKey.get(k);
-    if (arr) arr.push(c.item.id);
-    else byKey.set(k, [c.item.id]);
+    if (arr) arr.push(c.id);
+    else byKey.set(k, [c.id]);
   }
   const out: Record<string, string[]> = {};
   for (const ids of byKey.values()) {
@@ -137,17 +150,20 @@ export const duplicateGroups: Record<string, string[]> = (() => {
   return out;
 })();
 
-// Words that are themselves taught as vocabulary — used to pick a meaningful
-// blank in cloze (fill-in-the-blank) practice.
-let vocabWordSet: Set<string> | null = null;
+// Words taught as vocabulary — used to pick a meaningful blank in cloze
+// practice. Built per language (cloze is only offered for space-delimited
+// languages, but keeping it per-language keeps blanks on-topic).
+const vocabWordSetByLang: Partial<Record<LangId, Set<string>>> = {};
 export function getVocabWordSet(): Set<string> {
-  if (vocabWordSet) return vocabWordSet;
+  const lang = activeLang();
+  const cached = vocabWordSetByLang[lang];
+  if (cached) return cached;
   const s = new Set<string>();
-  for (const c of getAllItems()) {
+  for (const c of contextsByLang[lang]) {
     if (c.item.kind !== "vocab") continue;
-    s.add(normalize(c.item.indonesian));
-    for (const w of wordTokens(c.item.indonesian)) s.add(normalize(w));
+    s.add(normalize(c.item.target));
+    for (const w of wordTokens(c.item.target)) s.add(normalize(w));
   }
-  vocabWordSet = s;
+  vocabWordSetByLang[lang] = s;
   return s;
 }

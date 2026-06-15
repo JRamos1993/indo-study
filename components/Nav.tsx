@@ -4,23 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { getAllItems } from "@/lib/data";
+import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { dueItemIds, useProgress } from "@/lib/progress";
+import { updateSettings, useSettings } from "@/lib/settings";
 import { useMounted } from "@/lib/useMounted";
 
 export function Nav() {
   const pathname = usePathname();
   const store = useProgress();
   const mounted = useMounted();
+  const lang = useSettings().studyLanguage;
+  const langCfg = getLanguage(lang);
 
-  const allIds = useMemo(() => getAllItems().map((c) => c.item.id), []);
+  const allIds = useMemo(() => getAllItems(lang).map((c) => c.item.id), [lang]);
   const due = mounted ? dueItemIds(store, allIds).length : 0;
 
-  const link = (href: string, label: string) => {
+  const navLink = (href: string, label: string) => {
     const active = pathname === href;
     return (
       <Link
         href={href}
-        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+        className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
           active
             ? "bg-indigo-600 text-white"
             : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -33,19 +37,36 @@ export function Nav() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-      <nav className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-indigo-600 text-sm text-white">
-            id
-          </span>
-          <span>Indo Study</span>
-        </Link>
+      <nav className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Link href="/" aria-label="Home" className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-600 text-sm">
+            <span aria-hidden>{langCfg.flag}</span>
+          </Link>
+          {/* Language switcher — doubles as the "what am I studying" indicator */}
+          <label className="relative inline-flex items-center">
+            <span className="sr-only">Study language</span>
+            <select
+              value={lang}
+              onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
+              className="cursor-pointer rounded-lg border border-slate-300 bg-white py-1 pl-2 pr-6 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+            >
+              {LANG_IDS.map((id) => {
+                const c = getLanguage(id);
+                return (
+                  <option key={id} value={id}>
+                    {c.flag} {c.name}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        </div>
+
         <div className="flex items-center gap-1">
-          {link("/", "Home")}
-          {link("/stats", "Stats")}
+          {navLink("/stats", "Stats")}
           <Link
             href="/today"
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
               pathname === "/today"
                 ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"

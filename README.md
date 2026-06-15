@@ -1,13 +1,16 @@
-# Indo Study
+# Lingo Study
 
-A personal Next.js app to learn and test beginner Indonesian — flashcards,
-multiple-choice, type-the-answer, fill-in-the-blank, listening, speaking,
-word-order, confusable-pairs, word-building, FSRS spaced repetition, a one-tap
-daily session, stats, and a pronunciation guide. Local-first: progress is
-stored in the browser (`localStorage`), no backend or account.
+A personal Next.js app to learn and test beginner **Indonesian and Japanese** —
+flashcards, multiple-choice, type-the-answer, fill-in-the-blank, listening,
+speaking, word-order, confusable-pairs, word-building, plus Japanese **kana**
+(hiragana/katakana) and **kanji** drills. FSRS spaced repetition, a one-tap
+daily session, stats, and a per-language pronunciation guide. Local-first:
+progress is stored in the browser (`localStorage`), no backend or account.
 
-Content is a curated beginner (A1–A2) curriculum of ~17 themed units in
-`lib/data/unit-*.ts`.
+Switch the study language any time from the selector in the top nav (or in
+Settings). Each language is a curated beginner curriculum of themed units under
+`lib/data/<lang>/unit-*.ts` (`id` = Indonesian, `ja` = Japanese), registered in
+`lib/languages.ts`. Progress for each language is keyed separately and coexists.
 
 ## Run locally
 
@@ -52,8 +55,12 @@ them. The app works without this step (Web Speech fallback).
 
 ## Adding or extending content
 
-Add a `lib/data/unit-NN-topic.ts` file (copy an existing unit's shape — sections
-of `vocab`/`sentence` items; tag affixed forms with `root` to feed the
-word-building trainer) and register it in `lib/data/index.ts`. Then optionally
-`npm run gen:audio`. Item ids are position-based, so don't reorder existing
-sections/items (it resets spaced-repetition progress for moved items).
+Add a `lib/data/<lang>/unit-NN-topic.ts` file exporting `lesson: RawLesson`
+(items have `target` + `en` + `kind`; Japanese items also carry a `reading`
+romaji; tag affixed forms with `root` to feed the word-building trainer), and
+register it in that language's `units` array in `lib/languages.ts`. To add a
+whole new language, add a `LanguageConfig` (name, flag, `speechLang`, `ttsLang`,
+feature flags, units) there. Then optionally `npm run gen:audio` (it reads each
+`lib/data/<lang>/` folder and uses the folder name as the TTS language code).
+Item ids are position-based, so don't reorder existing sections/items (it resets
+spaced-repetition progress for moved items).

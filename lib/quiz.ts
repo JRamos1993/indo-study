@@ -8,10 +8,20 @@ export interface KindedText {
 }
 
 export function promptText(ctx: ItemContext, dir: Direction): string {
-  return dir === "id2en" ? ctx.item.indonesian : ctx.item.english;
+  return dir === "id2en" ? ctx.item.target : ctx.item.english;
 }
 export function answerText(ctx: ItemContext, dir: Direction): string {
-  return dir === "id2en" ? ctx.item.english : ctx.item.indonesian;
+  return dir === "id2en" ? ctx.item.english : ctx.item.target;
+}
+
+/** Every string accepted as a correct typed answer for this direction.
+ *  For target answers (English→target) we also accept the reading (romaji),
+ *  since a learner can't easily type kanji. */
+export function acceptedAnswers(ctx: ItemContext, dir: Direction): string[] {
+  if (dir === "id2en") return [ctx.item.english];
+  const out = [ctx.item.target];
+  if (ctx.item.reading) out.push(ctx.item.reading);
+  return out;
 }
 
 export function normalize(s: string): string {
@@ -59,11 +69,13 @@ export interface CheckResult {
   fuzzy: boolean;
 }
 
-/** Lenient check: exact match on any variant, or within a small edit distance. */
-export function checkAnswer(input: string, target: string): CheckResult {
+/** Lenient check: exact match on any variant, or within a small edit distance.
+ *  `target` may be several accepted answers (e.g. a word and its reading). */
+export function checkAnswer(input: string, target: string | string[]): CheckResult {
   const u = normalize(input);
   if (!u) return { correct: false, fuzzy: false };
-  const variants = answerVariants(target);
+  const targets = Array.isArray(target) ? target : [target];
+  const variants = [...new Set(targets.flatMap(answerVariants))];
   if (variants.includes(u)) return { correct: true, fuzzy: false };
   for (const v of variants) {
     const tolerance = v.length <= 4 ? 0 : v.length <= 8 ? 1 : 2;

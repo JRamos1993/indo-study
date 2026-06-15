@@ -11,11 +11,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Indo Study — learn & test your Indonesian",
+  title: "Lingo Study — learn Indonesian & Japanese",
   description:
-    "Study and memorize your Indonesian class materials with flashcards, quizzes, and spaced repetition.",
+    "Study and test beginner Indonesian and Japanese with flashcards, quizzes, kana/kanji drills, and spaced repetition.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Indo Study", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Lingo Study", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

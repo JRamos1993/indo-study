@@ -34,6 +34,8 @@ const MODE_LABEL: Record<Mode, string> = {
   order: "Word order",
   confusables: "Which form?",
   wordbuilding: "Word building",
+  kana: "Alphabet (kana)",
+  kanji: "Kanji",
 };
 
 function pickDirection(ctx: ItemContext): Direction {
@@ -42,7 +44,12 @@ function pickDirection(ctx: ItemContext): Direction {
 }
 
 function pickSub(mode: Mode): SubMode {
-  if (mode !== "mixed" && mode !== "daily") return mode;
+  // Character drills present items as flashcards / multiple-choice / typing.
+  if (mode === "kana" || mode === "kanji") {
+    const r = Math.random();
+    return r < 0.45 ? "mc" : r < 0.8 ? "type" : "flashcards";
+  }
+  if (mode !== "mixed" && mode !== "daily") return mode as SubMode;
   const r = Math.random();
   if (r < 0.2) return "mc";
   if (r < 0.36) return "type";
@@ -57,7 +64,7 @@ function pickSub(mode: Mode): SubMode {
  *  routes and mixed review never get stuck on an impossible card. */
 function resolveSub(desired: SubMode, ctx: ItemContext, speechOK: boolean): SubMode {
   const isSentence = ctx.item.kind === "sentence";
-  const enoughWords = wordTokens(ctx.item.indonesian).length >= 3;
+  const enoughWords = wordTokens(ctx.item.target).length >= 3;
   if ((desired === "cloze" || desired === "order") && !(isSentence && enoughWords)) return "type";
   if (desired === "listening" && !speechOK) return "mc";
   if (desired === "speaking" && !speechOK) return "flashcards";
@@ -75,16 +82,17 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const sectionId = params.get("section");
   const trouble = params.get("trouble") === "1";
   const daily = mode === "daily";
-  const special = mode === "confusables" || mode === "wordbuilding";
   const dueOnly = mode === "mixed" || params.get("due") === "1";
+  const lang = settings.studyLanguage;
 
-  const { englishPool, indonesianPool } = useMemo(() => {
+  const { englishPool, targetPool } = useMemo(() => {
     const all = getAllItems();
     return {
       englishPool: all.map<KindedText>((c) => ({ text: c.item.english, kind: c.item.kind })),
-      indonesianPool: all.map<KindedText>((c) => ({ text: c.item.indonesian, kind: c.item.kind })),
+      targetPool: all.map<KindedText>((c) => ({ text: c.item.target, kind: c.item.kind })),
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const orderedPool = useMemo<ItemContext[]>(() => {
     if (!mounted) return [];
@@ -129,13 +137,16 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         }
         return true;
       });
+    } else if (mode === "kana" || mode === "kanji") {
+      const k = mode === "kana" ? "kana" : "kanji";
+      base = getScopedItems({ lessonId, sectionId }).filter((c) => c.item.kind === k);
     } else {
       base = getScopedItems({ lessonId, sectionId });
       // Cloze and word-order only work on multi-word sentences — keep the
       // dedicated routes on-label instead of downgrading most cards to typing.
       if (mode === "cloze" || mode === "order") {
         base = base.filter(
-          (c) => c.item.kind === "sentence" && wordTokens(c.item.indonesian).length >= 3,
+          (c) => c.item.kind === "sentence" && wordTokens(c.item.target).length >= 3,
         );
       }
     }
@@ -145,7 +156,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     return [...fresh, ...seen];
     // store is intentionally read once at session start (stable queue).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, mode, daily, dueOnly, trouble, lessonId, sectionId]);
+  }, [mounted, mode, daily, dueOnly, trouble, lessonId, sectionId, lang]);
 
   const [batchStart, setBatchStart] = useState(0);
   const [queue, setQueue] = useState<Card[]>([]);
@@ -228,7 +239,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
               <ul className="space-y-0.5 text-slate-700 dark:text-slate-300">
                 {wrong.slice(0, 6).map((w) => (
                   <li key={w.item.id}>
-                    <span className="font-medium">{w.item.indonesian}</span> —{" "}
+                    <span className="font-medium">{w.item.target}</span> —{" "}
                     {w.item.english}
                   </li>
                 ))}
@@ -342,7 +353,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         key={`${current.ctx.item.id}-${current.sub}-${current.requeues}-${stats.answered}`}
         card={current}
         englishPool={englishPool}
-        indonesianPool={indonesianPool}
+        targetPool={targetPool}
         onGrade={advance}
       />
     </SessionShell>

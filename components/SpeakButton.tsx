@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { getLanguage } from "@/lib/languages";
+import { useSettings } from "@/lib/settings";
 import { playPhrase, pronunciationAvailable, warmUpVoices } from "@/lib/speech";
 
 export function SpeakButton({
@@ -12,6 +14,8 @@ export function SpeakButton({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
+  const langName = getLanguage(useSettings().studyLanguage).name;
+
   useEffect(() => {
     warmUpVoices();
   }, []);
@@ -24,7 +28,7 @@ export function SpeakButton({
   return (
     <button
       type="button"
-      aria-label={`Hear "${text}" in Indonesian`}
+      aria-label={`Hear "${text}" in ${langName}`}
       title="Hear pronunciation"
       onClick={(e) => {
         e.stopPropagation();

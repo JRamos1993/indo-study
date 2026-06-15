@@ -111,8 +111,11 @@ export function LessonBrowser({ lesson }: { lesson: Lesson }) {
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
                         <div className="flex min-w-0 items-center gap-2 sm:flex-1">
-                          <span className="font-medium">{item.indonesian}</span>
-                          <SpeakButton text={item.indonesian} size="sm" />
+                          <span className="font-medium">{item.target}</span>
+                          {item.reading && (
+                            <span className="text-xs text-slate-400">{item.reading}</span>
+                          )}
+                          <SpeakButton text={item.target} size="sm" />
                         </div>
                         <span className="text-slate-600 dark:text-slate-400 sm:flex-1 sm:text-right">
                           {item.english}

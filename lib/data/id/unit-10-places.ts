@@ -1,0 +1,71 @@
+import type { RawLesson } from "@/lib/types";
+
+export const lesson: RawLesson = {
+  id: "u10-places",
+  date: "unit-10",
+  title: "Places & Directions",
+  sections: [
+    {
+      titleEn: "Prepositions",
+      titleId: "Kata Depan",
+      notes: ["di = at/in/on (location), ke = to (direction), dari = from (origin). These three are very common — keep them straight."],
+      items: [
+        { target: "di", en: "at / in / on", kind: "vocab" },
+        { target: "ke", en: "to", kind: "vocab" },
+        { target: "dari", en: "from", kind: "vocab" },
+        { target: "di sini", en: "here", kind: "vocab" },
+        { target: "di sana", en: "there", kind: "vocab" },
+        { target: "di atas", en: "above / on top", kind: "vocab" },
+        { target: "di bawah", en: "below / under", kind: "vocab" },
+        { target: "di dalam", en: "inside", kind: "vocab" },
+        { target: "di luar", en: "outside", kind: "vocab" },
+        { target: "di depan", en: "in front of", kind: "vocab" },
+        { target: "di belakang", en: "behind", kind: "vocab" },
+        { target: "di samping", en: "next to", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Directions",
+      titleId: "Arah",
+      items: [
+        { target: "kiri", en: "left", kind: "vocab" },
+        { target: "kanan", en: "right", kind: "vocab" },
+        { target: "lurus", en: "straight", kind: "vocab" },
+        { target: "dekat", en: "near", kind: "vocab" },
+        { target: "jauh", en: "far", kind: "vocab" },
+        { target: "belok", en: "to turn", kind: "vocab" },
+        { target: "jalan", en: "street / to walk", kind: "vocab" },
+        { target: "peta", en: "map", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Places",
+      titleId: "Tempat",
+      items: [
+        { target: "rumah", en: "house / home", kind: "vocab" },
+        { target: "kantor", en: "office", kind: "vocab" },
+        { target: "sekolah", en: "school", kind: "vocab" },
+        { target: "pasar", en: "market", kind: "vocab" },
+        { target: "toko", en: "shop / store", kind: "vocab" },
+        { target: "rumah sakit", en: "hospital", kind: "vocab" },
+        { target: "bandara", en: "airport", kind: "vocab" },
+        { target: "stasiun", en: "station", kind: "vocab" },
+        { target: "hotel", en: "hotel", kind: "vocab" },
+        { target: "bank", en: "bank", kind: "vocab" },
+        { target: "kota", en: "city", kind: "vocab" },
+        { target: "desa", en: "village", kind: "vocab" },
+      ],
+    },
+    {
+      titleEn: "Example Sentences",
+      titleId: "Contoh Kalimat",
+      items: [
+        { target: "Di mana kamar mandi?", en: "Where is the bathroom?", kind: "sentence" },
+        { target: "Saya pergi ke kantor.", en: "I go to the office.", kind: "sentence" },
+        { target: "Belok kiri di sana.", en: "Turn left there.", kind: "sentence" },
+        { target: "Pasar dekat dari rumah saya.", en: "The market is near my house.", kind: "sentence" },
+        { target: "Toko itu ada di sebelah kanan.", en: "That shop is on the right.", kind: "sentence" },
+      ],
+    },
+  ],
+};

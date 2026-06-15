@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { DEFAULT_LANG, type LangId, isLangId } from "@/lib/languages";
 
 const KEY = "indo-study:settings:v1";
 
@@ -8,6 +9,7 @@ export type ThemePref = "system" | "light" | "dark";
 export type DirectionPref = "auto" | "id2en" | "en2id";
 
 export interface Settings {
+  studyLanguage: LangId;
   dailyGoal: number;
   newPerDay: number;
   targetRetention: number; // 0.7..0.97
@@ -16,6 +18,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  studyLanguage: DEFAULT_LANG,
   dailyGoal: 20,
   newPerDay: 15,
   targetRetention: 0.9,
@@ -35,6 +38,7 @@ function normalize(raw: unknown): Settings {
   const dir = o.defaultDirection;
   const theme = o.theme;
   return {
+    studyLanguage: isLangId(o.studyLanguage) ? o.studyLanguage : DEFAULT_SETTINGS.studyLanguage,
     dailyGoal: Math.round(clamp(o.dailyGoal as number, 5, 200, DEFAULT_SETTINGS.dailyGoal)),
     newPerDay: Math.round(clamp(o.newPerDay as number, 0, 100, DEFAULT_SETTINGS.newPerDay)),
     targetRetention: clamp(o.targetRetention as number, 0.7, 0.97, DEFAULT_SETTINGS.targetRetention),
@@ -58,6 +62,11 @@ function readFromDisk(): Settings {
 export function getSettings(): Settings {
   if (cache === null) cache = readFromDisk();
   return cache;
+}
+
+/** Non-reactive active study language (for data/quiz/speech helpers). */
+export function getStudyLanguage(): LangId {
+  return getSettings().studyLanguage;
 }
 
 function commit(next: Settings): void {

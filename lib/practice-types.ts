@@ -13,7 +13,9 @@ export type Mode =
   | "cloze"
   | "order"
   | "confusables"
-  | "wordbuilding";
+  | "wordbuilding"
+  | "kana"
+  | "kanji";
 
 /** The actual exercise shown for a single card. */
 export type SubMode =

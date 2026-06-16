@@ -108,13 +108,32 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
   const due = mounted ? dueItemIds(store, allIds).filter((id) => !isNew(store[id])).length : 0;
 
   return (
-    <div className="min-h-[100dvh] lg:grid lg:grid-cols-[236px_1fr]">
-      {/* Desktop sidebar */}
-      <aside
-        className="sticky top-0 hidden h-[100dvh] flex-col gap-1 overflow-y-auto p-4 lg:flex"
-        style={{ background: "var(--surface)", borderRight: "2px solid var(--edge)" }}
+    <div className="min-h-[100dvh]">
+      {/* Mobile top bar */}
+      <header
+        className="sticky top-0 z-20 flex items-center justify-between gap-2 px-4 py-2.5 backdrop-blur-xl lg:hidden"
+        style={{ borderBottom: "2px solid var(--edge)", background: "color-mix(in srgb, var(--paper) 82%, transparent)" }}
       >
-        <Link href="/today" aria-label="Lilt — Today" className="mb-3 px-2 py-1">
+        <Link href="/today" aria-label="Lilt — Today"><Logo /></Link>
+        <Link
+          href="/settings"
+          aria-label="Settings"
+          className="grid h-9 w-9 place-items-center rounded-xl"
+          style={{ color: "var(--muted)" }}
+        >
+          <Icon name="gear" size={20} />
+        </Link>
+      </header>
+
+      {/* Framed app panel on desktop; plain full-width stack on mobile */}
+      <div className="mx-auto w-full max-w-[1240px] lg:px-8 lg:py-8">
+        <div className="lg:grid lg:grid-cols-[236px_1fr] lg:overflow-hidden lg:rounded-[26px] lg:border-2 lg:[border-color:var(--edge)] lg:[background:var(--panel)] lg:[box-shadow:8px_8px_0_0_var(--edge)]">
+          {/* Desktop sidebar */}
+          <aside
+            className="hidden flex-col gap-1 p-4 lg:flex"
+            style={{ background: "var(--surface)", borderRight: "2px solid var(--edge)" }}
+          >
+            <Link href="/today" aria-label="Lilt — Today" className="mb-3 px-2 py-1">
           <Logo />
         </Link>
         <nav className="flex flex-col gap-1">
@@ -132,28 +151,12 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
           </Link>
           <LangSwitcher lang={lang} />
         </div>
-      </aside>
+          </aside>
 
-      {/* Mobile top bar */}
-      <header
-        className="sticky top-0 z-20 flex items-center justify-between gap-2 px-4 py-2.5 backdrop-blur-xl lg:hidden"
-        style={{ borderBottom: "2px solid var(--edge)", background: "color-mix(in srgb, var(--paper) 82%, transparent)" }}
-      >
-        <Link href="/today" aria-label="Lilt — Today"><Logo /></Link>
-        <Link
-          href="/settings"
-          aria-label="Settings"
-          className="grid h-9 w-9 place-items-center rounded-xl"
-          style={{ color: "var(--muted)" }}
-        >
-          <Icon name="gear" size={20} />
-        </Link>
-      </header>
-
-      {/* Content */}
-      <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:pb-10 lg:pt-8">
-        {children}
-      </main>
+          {/* Content */}
+          <main className="px-4 pb-28 pt-6 sm:px-6 lg:p-8 lg:pb-8">{children}</main>
+        </div>
+      </div>
 
       {/* Mobile bottom tab bar */}
       <nav

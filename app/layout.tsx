@@ -20,7 +20,7 @@ const display = Bricolage_Grotesque({
 });
 
 // Applied before paint to avoid a light/dark flash on load.
-const THEME_INIT = `(function(){try{var t=(JSON.parse(localStorage.getItem('indo-study:settings:v1')||'{}').theme)||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`;
+const THEME_INIT = `(function(){try{var t=(JSON.parse(localStorage.getItem('indo-study:settings:v1')||'{}').theme)||'light';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

@@ -23,7 +23,8 @@ export const DEFAULT_SETTINGS: Settings = {
   newPerDay: 15,
   targetRetention: 0.9,
   defaultDirection: "auto",
-  theme: "system",
+  // Default to the design's light "Pop-Sticker" look; dark stays a toggle.
+  theme: "light",
 };
 
 const listeners = new Set<() => void>();

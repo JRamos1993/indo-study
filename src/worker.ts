@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import { Hono } from "hono";
 import auth from "./auth";
+import circle from "./circle";
 import sync from "./sync";
 
 export interface Env {
@@ -31,6 +32,8 @@ app.get("/api/health", async (c) => {
 app.route("/api/auth", auth);
 // Cross-device progress sync.
 app.route("/api/sync", sync);
+// Circle — friends / group goal / leaderboard.
+app.route("/api/circle", circle);
 
 // `run_worker_first` only routes /api/* to the Worker; any other path that
 // reaches here means the static asset was missing — respond defensively.

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
@@ -226,60 +227,92 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   if (!current) {
     const total = stats.answered;
     const acc = total ? Math.round((stats.correct / total) * 100) : 0;
+    const streak = currentStreak(statsData);
     return (
       <SessionShell title={MODE_LABEL[mode]} subtitle={subtitle}>
-        <div className="card p-6 text-center">
-          <div className="text-5xl">{acc >= 80 ? "🎉" : acc >= 50 ? "👍" : "💪"}</div>
-          <h2 className="mt-3 text-xl">Session complete</h2>
-          <p className="mt-1 font-bold" style={{ color: "var(--ink)" }}>
-            {stats.correct} / {total} correct · {acc}% accuracy
-          </p>
-          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-            {currentStreak(statsData)}🔥 streak · {todayCount(statsData)}/{settings.dailyGoal}{" "}
-            today
-          </p>
-          {wrong.length > 0 && (
-            <div
-              className="mx-auto mt-5 max-w-sm rounded-xl px-4 py-3 text-left text-sm"
-              style={{ border: "2px solid var(--edge)", background: "color-mix(in srgb, var(--pop) 16%, transparent)" }}
-            >
-              <p className="section-label mb-1.5">Focus next time</p>
-              <ul className="space-y-1">
-                {wrong.slice(0, 6).map((w) => (
-                  <li key={w.item.id} className="flex gap-2">
-                    <span className="font-display font-bold">{w.item.target}</span>
-                    <span style={{ color: "var(--muted)" }}>— {w.item.english}</span>
-                  </li>
-                ))}
-              </ul>
+        <div
+          className="overflow-hidden rounded-[18px]"
+          style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-lime)" }}
+        >
+          {/* Lime accent banner */}
+          <div
+            className="flex items-center justify-between gap-3 px-6 py-4"
+            style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", borderBottom: "2px solid var(--edge)" }}
+          >
+            <div>
+              <div className="text-[11.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: "var(--on-lime)" }}>
+                Session complete
+              </div>
+              <h2 className="mt-0.5 font-display text-[22px] font-extrabold leading-none" style={{ color: "var(--lilt-ink)" }}>
+                {acc >= 80 ? "Crushed it" : acc >= 50 ? "Nice work" : "Keep at it"}
+              </h2>
             </div>
-          )}
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {wrong.length > 0 && (
-              <button onClick={() => setPracticeWrong(wrong)} className="btn btn-primary">
-                Practice {wrong.length} missed
-              </button>
-            )}
-            {!practiceWrong && remainingInCorpus > 0 && (
-              <button
-                onClick={() => setBatchStart((s) => s + SESSION_CAP)}
-                className="btn btn-secondary"
-              >
-                Next {Math.min(SESSION_CAP, remainingInCorpus)}
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setPracticeWrong(null);
-                setBatchStart(0);
-              }}
-              className="btn btn-secondary"
+            <span
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full"
+              style={{ background: "var(--lilt-ink)", color: "var(--lilt-lime)", border: "2px solid var(--edge)" }}
             >
-              Restart
-            </button>
-            <Link href="/learn" className="btn btn-secondary">
-              Done
-            </Link>
+              <Icon name="check" size={24} strokeWidth={3} />
+            </span>
+          </div>
+
+          {/* Stat row */}
+          <div className="grid grid-cols-3 divide-x-2" style={{ borderColor: "var(--edge)" }}>
+            <RecapStat value={`${acc}%`} label="accuracy" accent />
+            <RecapStat value={`${stats.correct}/${total}`} label="correct" />
+            <RecapStat value={`${streak}`} label="day streak" />
+          </div>
+
+          <div className="p-6">
+            <p className="text-center text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
+              {todayCount(statsData)}/{settings.dailyGoal} reviews today
+            </p>
+
+            {wrong.length > 0 && (
+              <div
+                className="mx-auto mt-5 max-w-sm rounded-[14px] p-4 text-left"
+                style={{ border: "2px solid var(--edge)", background: "var(--tint-coral)" }}
+              >
+                <p className="mb-2 flex items-center gap-1.5 text-[11.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: "var(--on-coral)" }}>
+                  <Icon name="target" size={14} strokeWidth={2.2} /> Hardest items
+                </p>
+                <ul className="space-y-1.5">
+                  {wrong.slice(0, 6).map((w) => (
+                    <li key={w.item.id} className="flex gap-2 text-sm">
+                      <span className="font-display font-extrabold" style={{ color: "var(--ink)" }}>{w.item.target}</span>
+                      <span style={{ color: "var(--text-body)" }}>— {w.item.english}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {wrong.length > 0 && (
+                <button onClick={() => setPracticeWrong(wrong)} className="btn btn-primary rounded-full">
+                  Practice {wrong.length} missed
+                </button>
+              )}
+              {!practiceWrong && remainingInCorpus > 0 && (
+                <button
+                  onClick={() => setBatchStart((s) => s + SESSION_CAP)}
+                  className="btn btn-secondary rounded-full"
+                >
+                  Next {Math.min(SESSION_CAP, remainingInCorpus)}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setPracticeWrong(null);
+                  setBatchStart(0);
+                }}
+                className="btn btn-secondary rounded-full"
+              >
+                Restart
+              </button>
+              <Link href="/learn" className="btn btn-secondary rounded-full">
+                Done
+              </Link>
+            </div>
           </div>
         </div>
       </SessionShell>
@@ -323,31 +356,33 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   return (
     <SessionShell title={MODE_LABEL[mode]} subtitle={subtitle}>
       <div className="mb-4">
-        <div className="mb-1.5 flex justify-between text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+        <div className="mb-1.5 flex items-center justify-between text-[11.5px] font-extrabold uppercase tracking-[0.05em]" style={{ color: "var(--muted)" }}>
           <span>
             {progressN} / {totalThisBatch}
             {queue.length > 1 ? ` · ${queue.length} in queue` : ""}
           </span>
-          <span>
-            {stats.answered ? `${Math.round((stats.correct / stats.answered) * 100)}%` : ""}
-          </span>
+          {stats.answered > 0 && (
+            <span style={{ color: "var(--accent)" }}>
+              {Math.round((stats.correct / stats.answered) * 100)}%
+            </span>
+          )}
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
+        <div className="h-3 w-full overflow-hidden rounded-full" style={{ background: "var(--track)", border: "2px solid var(--edge)" }}>
           <div
-            className="h-full transition-all"
+            className="h-full rounded-full transition-all"
             style={{ width: `${totalThisBatch ? (progressN / totalThisBatch) * 100 : 0}%`, background: "var(--accent)" }}
           />
         </div>
       </div>
 
       {lastUndo && (
-        <div className="mb-2 text-right">
+        <div className="mb-3 flex justify-end">
           <button
             onClick={undoLast}
-            className="text-xs font-bold underline-offset-2 hover:underline"
-            style={{ color: "var(--muted)" }}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-extrabold transition active:translate-x-[1px] active:translate-y-[1px] hover:-translate-y-0.5"
+            style={{ background: "var(--panel)", color: "var(--muted)", border: "2px solid var(--border-soft)" }}
           >
-            ↩ Undo last grade
+            <Icon name="refresh" size={13} strokeWidth={2.4} /> Undo last grade
           </button>
         </div>
       )}
@@ -375,20 +410,45 @@ function SessionShell({
   return (
     <div>
       <div className="mb-5">
-        <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
-          ← Back
+        <Link
+          href="/learn"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-extrabold transition active:translate-x-[1px] active:translate-y-[1px] hover:-translate-y-0.5"
+          style={{ background: "var(--surface)", color: "var(--ink)", border: "2px solid var(--edge)" }}
+        >
+          <Icon name="arrow" size={14} strokeWidth={2.4} className="-scale-x-100" /> Back
         </Link>
-        <h1 className="mt-2 text-2xl">{title}</h1>
-        {subtitle && <p className="text-sm" style={{ color: "var(--muted)" }}>{subtitle}</p>}
+        <h1 className="mt-3 text-[26px] leading-none">{title}</h1>
+        {subtitle && (
+          <p className="mt-1.5 text-[13px] font-bold" style={{ color: "var(--muted)" }}>{subtitle}</p>
+        )}
       </div>
       {children}
     </div>
   );
 }
 
+function RecapStat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div className="px-2 py-4 text-center">
+      <div
+        className="font-display text-[26px] font-extrabold leading-none"
+        style={{ color: accent ? "var(--accent)" : "var(--ink)" }}
+      >
+        {value}
+      </div>
+      <div className="mt-1 text-[11px] font-extrabold uppercase tracking-[0.05em]" style={{ color: "var(--muted)" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function Loading() {
   return (
-    <div className="card grid h-56 place-items-center" style={{ color: "var(--muted)" }}>
+    <div
+      className="grid h-56 place-items-center rounded-[18px] text-[13px] font-bold"
+      style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--edge)", color: "var(--muted)" }}
+    >
       Loading…
     </div>
   );
@@ -418,11 +478,14 @@ function EmptyState({ reason }: { reason: "due" | "trouble" | "scope" | "daily" 
     },
   }[reason];
   return (
-    <div className="card p-8 text-center">
+    <div
+      className="p-8 text-center rounded-[18px]"
+      style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-violet)" }}
+    >
       <div className="text-4xl">{copy.icon}</div>
-      <h2 className="mt-3 text-lg">{copy.title}</h2>
-      <p className="mx-auto mt-1 max-w-sm text-sm" style={{ color: "var(--muted)" }}>{copy.body}</p>
-      <Link href="/learn" className="btn btn-primary mt-5">
+      <h2 className="mt-3 font-display text-[19px] font-extrabold">{copy.title}</h2>
+      <p className="mx-auto mt-1.5 max-w-sm text-[13px] font-bold" style={{ color: "var(--muted)" }}>{copy.body}</p>
+      <Link href="/learn" className="btn btn-primary rounded-full mt-5">
         Go home
       </Link>
     </div>

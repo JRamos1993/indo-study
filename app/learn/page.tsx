@@ -12,6 +12,7 @@ import type { Lesson } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
 
 type View = "category" | "difficulty";
+type UnitState = "mastered" | "current" | "next" | "locked";
 
 export default function LearnDashboard() {
   const store = useProgress();
@@ -36,14 +37,34 @@ export default function LearnDashboard() {
     [lang],
   );
 
-  // Current unit = first (in path order) not yet fully mastered.
-  const currentId = useMemo(() => {
-    if (!mounted) return null;
-    for (const l of getLessons(lang)) {
+  // Per-lesson percent + path state, computed in global path order (drives the
+  // mastered / in-progress / up-next / locked-at-80% syllabus states).
+  const lessonState = useMemo(() => {
+    const map: Record<string, { pct: number; state: UnitState }> = {};
+    const lessons = getLessons(lang);
+    const pcts = lessons.map((l) => {
       const ids = l.sections.flatMap((s) => s.items.map((i) => i.id));
-      if (masteryPercent(store, ids) < 100) return l.id;
-    }
-    return null;
+      return mounted ? masteryPercent(store, ids) : 0;
+    });
+    let currentSet = false;
+    lessons.forEach((l, i) => {
+      const pct = pcts[i];
+      const mastered = pct >= 100;
+      const prevOk = i === 0 || pcts[i - 1] >= 80;
+      let state: UnitState;
+      if (mastered) {
+        state = "mastered";
+      } else if (mounted && !prevOk) {
+        state = "locked";
+      } else if (!currentSet && (!mounted || prevOk)) {
+        state = "current";
+        currentSet = true;
+      } else {
+        state = "next";
+      }
+      map[l.id] = { pct, state };
+    });
+    return map;
   }, [mounted, store, lang]);
 
   const overall = summarize(store, allIds);
@@ -54,28 +75,47 @@ export default function LearnDashboard() {
   const goalMet = doneToday >= dailyGoal;
   const goalPct = Math.min(100, Math.round((doneToday / dailyGoal) * 100));
 
+  const totalUnits = getLessons(lang).length;
+  const masteredUnits = mounted
+    ? Object.values(lessonState).filter((s) => s.state === "mastered").length
+    : 0;
+  const coursePct = totalUnits ? Math.round((masteredUnits / totalUnits) * 100) : 0;
+
   return (
     <div>
       <header className="mb-6">
-        <p className="eyebrow">
-          {langCfg.flag} {langCfg.name}
-        </p>
+        <div
+          className="text-[13px] font-extrabold uppercase tracking-[0.05em]"
+          style={{ color: "var(--muted)" }}
+        >
+          {langCfg.flag} {langCfg.name} · Course
+        </div>
         <h1 className="mt-1 text-[30px] leading-none">{langCfg.greeting}</h1>
       </header>
 
-      {/* Daily session */}
+      {/* Daily session — bold sticker hero */}
       <Link
         href="/today"
-        className="mb-6 block rounded-2xl p-6"
-        style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--edge)" }}
+        className="mb-7 block rounded-[22px] p-6 transition active:translate-x-[2px] active:translate-y-[2px] sm:p-7"
+        style={{
+          background: "var(--lilt-ink)",
+          color: "#fff",
+          border: "2px solid var(--edge)",
+          boxShadow: "5px 5px 0 0 var(--lilt-violet)",
+        }}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="eyebrow" style={{ color: "currentColor", opacity: 0.85 }}>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.04em]"
+              style={{ background: "var(--lilt-violet)", color: "#fff" }}
+            >
               Daily session
-            </p>
-            <h2 className="mt-1 text-2xl">{show && goalMet ? "Goal reached" : "Study today"}</h2>
-            <p className="mt-1.5 text-sm" style={{ opacity: 0.9 }}>
+            </span>
+            <h2 className="mt-3.5 text-[26px] leading-tight text-white">
+              {show && goalMet ? "Goal reached" : "Study today"}
+            </h2>
+            <p className="mt-1.5 text-sm font-bold" style={{ color: "#b8b0da" }}>
               {!show
                 ? "One tap — the best mix."
                 : goalMet
@@ -83,39 +123,56 @@ export default function LearnDashboard() {
                   : `${overall.due} due${troubleCount > 0 ? ` · ${troubleCount} tricky` : ""} · a few new`}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ border: "2px solid var(--edge)", background: "rgba(255,255,255,0.14)" }}>
-            <Icon name="flame" size={16} />
-            <span className="font-display text-base font-bold">{show ? streak : "—"}</span>
+          <div
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{ border: "2px solid var(--lilt-lime)", background: "#332b52" }}
+          >
+            <span style={{ color: "var(--lilt-yellow)" }}>
+              <Icon name="flame" size={16} />
+            </span>
+            <span className="font-display text-base font-extrabold text-white">{show ? streak : "—"}</span>
           </div>
         </div>
         <div className="mt-5">
-          <div className="mb-1.5 flex justify-between text-xs font-bold uppercase tracking-wide" style={{ opacity: 0.85 }}>
+          <div
+            className="mb-1.5 flex justify-between text-[11.5px] font-extrabold uppercase tracking-[0.04em]"
+            style={{ color: "#b8b0da" }}
+          >
             <span>Today</span>
-            <span>{show ? doneToday : 0} / {dailyGoal}</span>
+            <span>
+              {show ? doneToday : 0} / {dailyGoal}
+            </span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.2)" }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${goalPct}%`, background: "var(--pop)" }} />
+          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "#332b52" }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${goalPct}%`, background: "var(--lilt-lime)" }}
+            />
           </div>
         </div>
       </Link>
 
       {/* Quick links */}
       <div className="mb-8 grid grid-cols-3 gap-3">
-        <QuickLink href="/practice" icon="blocks" label="Practice" />
-        <QuickLink href="/review" icon="refresh" label="Review" />
-        <QuickLink href="/glossary" icon="book" label="Glossary" />
+        <QuickLink href="/practice" icon="blocks" label="Practice" shadow="var(--lilt-violet)" tint="var(--tint-lilac)" />
+        <QuickLink href="/review" icon="refresh" label="Review" shadow="var(--lilt-lime)" tint="var(--tint-lime)" />
+        <QuickLink href="/glossary" icon="book" label="Glossary" shadow="var(--lilt-yellow)" tint="var(--tint-yellow)" />
       </div>
 
-      {/* Path */}
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="section-label mb-0">Your path</h2>
-        <div className="inline-flex overflow-hidden rounded-lg" style={{ border: "2px solid var(--edge)" }}>
+      {/* Course header + mastery track + grouping toggle */}
+      <div className="mb-3.5 flex items-baseline justify-between gap-3">
+        <h2 className="text-[18px]">Your course</h2>
+        <div className="inline-flex overflow-hidden rounded-full" style={{ border: "2px solid var(--edge)" }}>
           {(["category", "difficulty"] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className="px-3 py-1 text-xs font-bold uppercase tracking-wide transition"
-              style={view === v ? { background: "var(--edge)", color: "var(--paper)" } : { color: "var(--muted)" }}
+              className="px-3.5 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.04em] transition"
+              style={
+                view === v
+                  ? { background: "var(--accent)", color: "var(--accent-ink)" }
+                  : { color: "var(--muted)" }
+              }
             >
               {v === "category" ? "Topic" : "Level"}
             </button>
@@ -123,24 +180,61 @@ export default function LearnDashboard() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div
+        className="mb-7 flex items-center gap-3.5 rounded-[16px] px-4 py-3.5"
+        style={{ background: "var(--panel)", border: "2px solid var(--edge)" }}
+      >
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px]"
+          style={{ background: "var(--lilt-lime)", border: "2px solid var(--edge)", color: "var(--lilt-ink)" }}
+        >
+          <Icon name="course" size={18} strokeWidth={2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-display text-[14px] font-extrabold">{langCfg.name} mastery</span>
+            <span className="text-[12px] font-extrabold" style={{ color: "var(--accent)" }}>
+              {show ? `${masteredUnits} of ${totalUnits} units` : `${totalUnits} units`}
+            </span>
+          </div>
+          <div
+            className="mt-2 h-2.5 w-full overflow-hidden rounded-full"
+            style={{ background: "var(--track)" }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${show ? coursePct : 0}%`, background: "var(--lilt-lime)" }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-7">
         {groups.map((group) => (
           <section key={group.title}>
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded-md" style={{ border: "2px solid var(--edge)" }}>
-                <Icon name={group.icon as IconName} size={13} />
+            <div className="mb-3 flex items-center gap-2.5">
+              <span
+                className="grid h-7 w-7 place-items-center rounded-[9px]"
+                style={{ background: "var(--tint-violet)", border: "2px solid var(--edge)", color: "var(--accent)" }}
+              >
+                <Icon name={group.icon as IconName} size={14} strokeWidth={2} />
               </span>
-              <h3 className="text-sm">{group.title}</h3>
+              <h3 className="text-[16px]">{group.title}</h3>
             </div>
-            <div className="space-y-2.5">
-              {group.lessons.map((lesson) => (
+            <div
+              className="overflow-hidden rounded-[18px]"
+              style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}
+            >
+              {group.lessons.map((lesson, i) => (
                 <UnitRow
                   key={lesson.id}
                   lesson={lesson}
                   n={order[lesson.id]}
                   store={store}
                   show={show}
-                  current={lesson.id === currentId}
+                  state={lessonState[lesson.id]?.state ?? "next"}
+                  pct={lessonState[lesson.id]?.pct ?? 0}
+                  last={i === group.lessons.length - 1}
                 />
               ))}
             </div>
@@ -148,25 +242,55 @@ export default function LearnDashboard() {
         ))}
       </div>
 
-      <footer className="mt-12 pt-6 text-xs" style={{ borderTop: "2px solid var(--edge)", color: "var(--muted)" }}>
+      <footer
+        className="mt-12 pt-6 text-xs"
+        style={{ borderTop: "2px solid var(--edge)", color: "var(--muted)" }}
+      >
         <p className="flex flex-wrap gap-x-4 gap-y-1">
-          <Link href="/stats" className="font-bold" style={{ color: "var(--accent)" }}>Stats</Link>
-          <Link href="/guide/pronunciation" className="font-bold" style={{ color: "var(--accent)" }}>Pronunciation</Link>
-          <Link href="/settings" className="font-bold" style={{ color: "var(--accent)" }}>Settings</Link>
-          <Link href="/" className="font-bold" style={{ color: "var(--accent)" }}>About</Link>
+          <Link href="/stats" className="font-extrabold" style={{ color: "var(--accent)" }}>
+            Stats
+          </Link>
+          <Link href="/guide/pronunciation" className="font-extrabold" style={{ color: "var(--accent)" }}>
+            Pronunciation
+          </Link>
+          <Link href="/settings" className="font-extrabold" style={{ color: "var(--accent)" }}>
+            Settings
+          </Link>
+          <Link href="/" className="font-extrabold" style={{ color: "var(--accent)" }}>
+            About
+          </Link>
         </p>
       </footer>
     </div>
   );
 }
 
-function QuickLink({ href, icon, label }: { href: string; icon: IconName; label: string }) {
+function QuickLink({
+  href,
+  icon,
+  label,
+  shadow,
+  tint,
+}: {
+  href: string;
+  icon: IconName;
+  label: string;
+  shadow: string;
+  tint: string;
+}) {
   return (
-    <Link href={href} className="card card-hover flex flex-col items-center gap-1.5 p-3 text-center">
-      <span style={{ color: "var(--accent)" }}>
-        <Icon name={icon} size={20} />
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-2 rounded-[16px] p-3.5 text-center transition hover:-translate-x-0.5 hover:-translate-y-0.5"
+      style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: `3px 3px 0 0 ${shadow}` }}
+    >
+      <span
+        className="grid h-10 w-10 place-items-center rounded-[11px]"
+        style={{ background: tint, border: "2px solid var(--edge)", color: "var(--ink)" }}
+      >
+        <Icon name={icon} size={20} strokeWidth={1.9} />
       </span>
-      <span className="text-sm font-bold">{label}</span>
+      <span className="text-[13.5px] font-extrabold">{label}</span>
     </Link>
   );
 }
@@ -176,55 +300,134 @@ function UnitRow({
   n,
   store,
   show,
-  current,
+  state,
+  pct,
+  last,
 }: {
   lesson: Lesson;
   n: number;
   store: ReturnType<typeof useProgress>;
   show: boolean;
-  current: boolean;
+  state: UnitState;
+  pct: number;
+  last: boolean;
 }) {
   const ids = lesson.sections.flatMap((s) => s.items.map((i) => i.id));
   const sum = summarize(store, ids);
-  const pct = show ? masteryPercent(store, ids) : 0;
-  const done = pct >= 100;
+  const mastered = state === "mastered";
+  const current = state === "current";
+  const locked = show && state === "locked";
 
   return (
     <Link
-      href={`/lessons/${lesson.id}`}
-      className="card card-hover flex items-center gap-3.5 p-3.5"
-      style={current ? { boxShadow: "4px 4px 0 0 var(--accent)" } : undefined}
+      href={locked ? "#" : `/lessons/${lesson.id}`}
+      className="flex items-center gap-3.5 px-4 py-3.5 transition"
+      style={{
+        borderBottom: last ? undefined : "1.5px solid var(--divider)",
+        background: current ? "var(--tint-violet)" : undefined,
+        pointerEvents: locked ? "none" : undefined,
+      }}
     >
       <span
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-display text-sm font-bold"
-        style={
-          done
-            ? { background: "var(--pop)", color: "#14151a", border: "2px solid var(--edge)" }
-            : current
-              ? { background: "var(--accent)", color: "var(--accent-ink)", border: "2px solid var(--edge)" }
-              : { border: "2px solid var(--edge)", color: "var(--muted)" }
-        }
+        className="w-6 shrink-0 text-center font-display text-[15px] font-extrabold"
+        style={{ color: current ? "var(--accent)" : locked ? "var(--text-disabled)" : "var(--text-faint)" }}
       >
-        {done ? <Icon name="target" size={18} /> : n}
+        {String(n).padStart(2, "0")}
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-display font-bold">{lesson.title}</span>
-          {current && (
-            <span className="chip shrink-0" style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "1.5px solid var(--edge)" }}>
-              Continue
+      <StatusDot mastered={mastered} current={current} locked={locked} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span
+            className="truncate font-display text-[15px] font-extrabold"
+            style={{ color: locked ? "var(--text-faint)" : "var(--ink)" }}
+          >
+            {lesson.title}
+          </span>
+          {show && !locked && sum.due > 0 && (
+            <span
+              className="chip shrink-0"
+              style={{ background: "var(--pop)", color: "var(--pop-ink)", border: "1.5px solid var(--edge)" }}
+            >
+              {sum.due} due
             </span>
           )}
-        </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
-          <div className="h-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
-        </div>
-      </div>
-      {show && sum.due > 0 && (
-        <span className="chip shrink-0" style={{ background: "var(--pop)", color: "#14151a", border: "1.5px solid var(--edge)" }}>
-          {sum.due} due
+        </span>
+        <span
+          className="mt-0.5 block text-[12px] font-bold"
+          style={{ color: current ? "var(--accent)" : "var(--muted)" }}
+        >
+          {!show
+            ? "—"
+            : mastered
+              ? `Mastered · ${pct}%`
+              : locked
+                ? "Locked · unlocks at 80%"
+                : current
+                  ? `In progress · ${pct}%`
+                  : `Up next · ${pct}%`}
+        </span>
+      </span>
+      {current ? (
+        <span
+          className="shrink-0 rounded-full px-4 py-2 text-[13px] font-extrabold"
+          style={{
+            background: "var(--accent)",
+            color: "var(--accent-ink)",
+            border: "2px solid var(--edge)",
+            boxShadow: "3px 3px 0 0 var(--edge)",
+          }}
+        >
+          Continue
+        </span>
+      ) : (
+        <span
+          className="hidden h-2 w-[120px] shrink-0 overflow-hidden rounded-full sm:block"
+          style={{ background: "var(--track)" }}
+        >
+          <span
+            className="block h-full"
+            style={{ width: `${show ? pct : 0}%`, background: mastered ? "var(--lilt-lime)" : "var(--accent)" }}
+          />
         </span>
       )}
     </Link>
+  );
+}
+
+function StatusDot({ mastered, current, locked }: { mastered: boolean; current: boolean; locked: boolean }) {
+  if (mastered)
+    return (
+      <span
+        className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px]"
+        style={{ background: "var(--lilt-lime)", border: "2px solid var(--edge)", color: "var(--lilt-ink)" }}
+      >
+        <Icon name="check" size={16} strokeWidth={3} />
+      </span>
+    );
+  if (current)
+    return (
+      <span
+        className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px]"
+        style={{ background: "var(--accent)", border: "2px solid var(--edge)", color: "#fff" }}
+      >
+        <Icon name="play" size={14} />
+      </span>
+    );
+  if (locked)
+    return (
+      <span
+        className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px]"
+        style={{ background: "var(--tint-violet-2)", border: "2px solid var(--border-dashed)", color: "var(--border-dashed)" }}
+      >
+        <Icon name="lock" size={15} strokeWidth={2.4} />
+      </span>
+    );
+  return (
+    <span
+      className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px]"
+      style={{ background: "var(--surface)", border: "2px solid var(--border-dashed)", color: "var(--border-dashed)" }}
+    >
+      <Icon name="arrow" size={15} strokeWidth={2.4} />
+    </span>
   );
 }

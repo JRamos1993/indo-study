@@ -8,13 +8,24 @@ import { hasConfusables } from "@/lib/confusables";
 import { getLanguage } from "@/lib/languages";
 import { useSettings } from "@/lib/settings";
 
+type Mode = { href: string; label: string; desc: string; icon: IconName; badge?: string };
+
+// Rotating accent palette — each tile gets a tinted icon box + matching hard shadow,
+// cycling violet → lime → yellow → coral the way the Today dashboard mode grid does.
+const ACCENTS = [
+  { shadow: "var(--lilt-violet)", tint: "var(--tint-lilac)" },
+  { shadow: "var(--lilt-lime)", tint: "var(--tint-lime)" },
+  { shadow: "var(--lilt-yellow)", tint: "var(--tint-yellow)" },
+  { shadow: "var(--lilt-coral)", tint: "var(--tint-coral)" },
+] as const;
+
 export default function PracticeHub() {
   const lang = useSettings().studyLanguage;
   const f = getLanguage(lang).features;
 
   const modes = useMemo(() => {
-    const m: { href: string; label: string; desc: string; icon: IconName }[] = [
-      { href: "/review", label: "Spaced review", desc: "Smart mix of everything due", icon: "refresh" },
+    const m: Mode[] = [
+      { href: "/review", label: "Spaced review", desc: "Smart mix of everything due", icon: "refresh", badge: "Recommended" },
       { href: "/study/flashcards", label: "Flashcards", desc: "Flip & self-rate", icon: "cards" },
       { href: "/quiz/mc", label: "Multiple choice", desc: "Pick the meaning", icon: "list" },
       { href: "/quiz/type", label: "Type the answer", desc: "Active recall", icon: "keyboard" },
@@ -34,28 +45,54 @@ export default function PracticeHub() {
 
   return (
     <div>
-      <Link href="/learn" className="inline-flex items-center gap-1 text-sm font-bold" style={{ color: "var(--muted)" }}>
-        ← Course
+      <Link
+        href="/learn"
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-extrabold"
+        style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)", boxShadow: "3px 3px 0 0 var(--edge)" }}
+      >
+        <span className="inline-flex" style={{ transform: "rotate(180deg)" }}>
+          <Icon name="arrow" size={15} strokeWidth={2.6} />
+        </span>{" "}
+        Course
       </Link>
-      <h1 className="mt-3 text-2xl">Practice</h1>
-      <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-        Pick any drill — each pulls from your whole {getLanguage(lang).name} course.
-      </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {modes.map((m) => (
-          <Link key={m.href} href={m.href} className="card card-hover flex items-center gap-3.5 p-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ border: "2px solid var(--edge)", background: "var(--pop)", color: "#14151a" }}>
-              <Icon name={m.icon} size={22} />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-display font-bold leading-tight">{m.label}</span>
-              <span className="mt-0.5 block text-sm" style={{ color: "var(--muted)" }}>
-                {m.desc}
+      <header className="mt-5">
+        <span className="eyebrow">{getLanguage(lang).name} · drills</span>
+        <h1 className="mt-1.5 text-[30px] leading-none">Practice</h1>
+        <p className="mt-2 text-[14px] font-bold" style={{ color: "var(--muted)" }}>
+          Pick any drill — each pulls from your whole {getLanguage(lang).name} course.
+        </p>
+      </header>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {modes.map((m, i) => {
+          const a = ACCENTS[i % ACCENTS.length];
+          return (
+            <Link
+              key={m.href}
+              href={m.href}
+              className="flex flex-col rounded-[16px] p-4 transition hover:-translate-x-0.5 hover:-translate-y-0.5"
+              style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: `3px 3px 0 0 ${a.shadow}` }}
+            >
+              <span
+                className="mb-3 grid h-10 w-10 place-items-center rounded-[11px]"
+                style={{ background: a.tint, border: "2px solid var(--edge)", color: "var(--ink)" }}
+              >
+                <Icon name={m.icon} size={21} strokeWidth={1.9} />
               </span>
-            </span>
-          </Link>
-        ))}
+              <div className="font-display text-[16px] font-extrabold leading-tight">{m.label}</div>
+              <div className="mt-0.5 text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>{m.desc}</div>
+              {m.badge && (
+                <span
+                  className="mt-2.5 inline-block self-start rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold"
+                  style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
+                >
+                  {m.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

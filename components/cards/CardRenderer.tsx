@@ -24,8 +24,28 @@ import { playPhrase } from "@/lib/speech";
 import type { ItemContext } from "@/lib/types";
 import { SpeakButton } from "../SpeakButton";
 
-const PRIMARY =
-  "w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700";
+const PRIMARY = "btn btn-primary w-full";
+
+// Result palettes — lime "pop" for correct, a punchy red tint for wrong,
+// both fenced by the 2px edge so they read in light and dark alike.
+const RESULT_OK: React.CSSProperties = {
+  border: "2px solid var(--edge)",
+  background: "var(--pop)",
+  color: "#14151a",
+};
+const RESULT_NO: React.CSSProperties = {
+  border: "2px solid var(--edge)",
+  background: "color-mix(in srgb, #ff5470 20%, transparent)",
+  color: "var(--ink)",
+};
+
+/** Selected-state styling for an answer option button. */
+function optStyle(selected: string | null, choice: string, answer: string): React.CSSProperties {
+  if (!selected) return {};
+  if (choice === answer) return { border: "2px solid var(--edge)", background: "var(--pop)", color: "#14151a" };
+  if (choice === selected) return { border: "2px solid var(--edge)", background: "color-mix(in srgb, #ff5470 20%, transparent)" };
+  return { opacity: 0.5 };
+}
 
 interface SubProps {
   ctx: ItemContext;
@@ -79,7 +99,7 @@ function dirLabel(promptIsTarget: boolean, name: string): string {
 
 function Tag({ left, right }: { left: string; right: string }) {
   return (
-    <div className="mb-3 flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+    <div className="mb-3 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--muted)" }}>
       <span>{left}</span>
       <span aria-hidden>·</span>
       <span>{right}</span>
@@ -89,14 +109,12 @@ function Tag({ left, right }: { left: string; right: string }) {
 
 function Reading({ text }: { text?: string }) {
   if (!text) return null;
-  return (
-    <p className="mt-1 text-sm font-normal text-slate-500 dark:text-slate-400">{text}</p>
-  );
+  return <p className="mt-1 text-sm font-normal" style={{ color: "var(--muted)" }}>{text}</p>;
 }
 
 function SourceLine({ ctx }: { ctx: ItemContext }) {
   return (
-    <p className="mt-5 text-center text-xs text-slate-400">
+    <p className="mt-5 text-center text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
       {ctx.lessonTitle} · {ctx.sectionTitle}
     </p>
   );
@@ -104,9 +122,7 @@ function SourceLine({ ctx }: { ctx: ItemContext }) {
 
 function NoteLine({ text }: { text?: string }) {
   if (!text) return null;
-  return (
-    <p className="mt-3 text-center text-sm text-slate-500 dark:text-slate-400">{text}</p>
-  );
+  return <p className="mt-3 text-center text-sm" style={{ color: "var(--muted)" }}>{text}</p>;
 }
 
 function kindLabel(ctx: ItemContext) {
@@ -131,24 +147,22 @@ function GradeRow({
   onGrade: (g: Grade) => void;
   intervals?: Record<Grade, string>;
 }) {
-  const base =
-    "flex flex-col items-center gap-0.5 rounded-xl border py-2.5 text-xs font-semibold transition";
-  const cells: { g: Grade; key: string; label: string; cls: string }[] = [
-    { g: "again", key: "1", label: "Again", cls: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40" },
-    { g: "hard", key: "2", label: "Hard", cls: "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40" },
-    { g: "good", key: "3", label: "Good", cls: "border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40" },
-    { g: "easy", key: "4", label: "Easy", cls: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40" },
+  const cells: { g: Grade; key: string; label: string; color: string }[] = [
+    { g: "again", key: "1", label: "Again", color: "#e5484d" },
+    { g: "hard", key: "2", label: "Hard", color: "#d9822b" },
+    { g: "good", key: "3", label: "Good", color: "var(--accent)" },
+    { g: "easy", key: "4", label: "Easy", color: "#2f9e64" },
   ];
   return (
     <div className="grid grid-cols-4 gap-2">
-      {cells.map(({ g, key, label, cls }) => (
-        <button key={g} onClick={() => onGrade(g)} className={`${base} ${cls}`}>
+      {cells.map(({ g, key, label, color }) => (
+        <button key={g} onClick={() => onGrade(g)} className="grade-btn" style={{ color }}>
           <span>
             {label}
             <span className="ml-1 opacity-50">{key}</span>
           </span>
           {intervals && (
-            <span className="text-[10px] font-normal opacity-70">{intervals[g]}</span>
+            <span className="text-[10px] font-bold opacity-70">{intervals[g]}</span>
           )}
         </button>
       ))}
@@ -175,15 +189,9 @@ function ResultBar({
 }) {
   return (
     <div className="mt-4">
-      <div
-        className={`rounded-xl px-4 py-3 text-center text-sm ${
-          correct
-            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-            : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-        }`}
-      >
+      <div className="rounded-xl px-4 py-3 text-center text-sm font-bold" style={correct ? RESULT_OK : RESULT_NO}>
         {correct ? (fuzzy ? "Close enough — correct!" : "Correct!") : "Not quite."}
-        <div className="mt-1 flex items-center justify-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
+        <div className="mt-1 flex items-center justify-center gap-2 text-base font-display">
           {answer}
           {speakText && <SpeakButton text={speakText} size="sm" />}
         </div>
@@ -213,7 +221,7 @@ function PromptText({
   return (
     <div className="flex flex-col items-center gap-0.5 text-center">
       <div className="flex items-center justify-center gap-2">
-        <span className="text-2xl font-semibold sm:text-3xl">{text}</span>
+        <span className="font-display text-2xl sm:text-3xl">{text}</span>
         {showSpeaker && <SpeakButton text={speakText} size="md" />}
       </div>
       <Reading text={reading} />
@@ -267,9 +275,9 @@ function FlashcardCard({ ctx, card, onGrade }: SubProps) {
         </button>
       ) : (
         <>
-          <div className="mb-5 flex flex-col items-center gap-1 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
+          <div className="mb-5 flex flex-col items-center gap-1 pt-5 text-center" style={{ borderTop: "2px solid var(--edge)" }}>
             <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">
+              <span className="font-display text-xl" style={{ color: "var(--accent)" }}>
                 {answer}
               </span>
               {!promptIsTarget && <SpeakButton text={ctx.item.target} size="md" />}
@@ -329,30 +337,20 @@ function McCard({ ctx, card, englishPool, targetPool, onGrade }: SubProps) {
         />
       </div>
       <div className="grid gap-2">
-        {choices.map((c, i) => {
-          const isCorrect = c === answer;
-          const isPicked = c === selected;
-          let cls =
-            "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800";
-          if (selected) {
-            if (isCorrect) cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40";
-            else if (isPicked) cls = "border-rose-500 bg-rose-50 dark:bg-rose-950/40";
-            else cls = "border-slate-200 opacity-60 dark:border-slate-800";
-          }
-          return (
-            <button
-              key={c + i}
-              disabled={!!selected}
-              onClick={() => setSelected(c)}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${cls}`}
-            >
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800">
-                {i + 1}
-              </span>
-              <span className="font-medium">{c}</span>
-            </button>
-          );
-        })}
+        {choices.map((c, i) => (
+          <button
+            key={c + i}
+            disabled={!!selected}
+            onClick={() => setSelected(c)}
+            className="opt"
+            style={optStyle(selected, c, answer)}
+          >
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-xs font-bold" style={{ border: "2px solid var(--edge)", background: "var(--paper)", color: "var(--muted)" }}>
+              {i + 1}
+            </span>
+            <span>{c}</span>
+          </button>
+        ))}
       </div>
       {selected && (
         <ResultBar
@@ -408,7 +406,7 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
           disabled={!!checked}
           onChange={(e) => setInput(e.target.value)}
           placeholder={promptIsTarget ? "Type the English…" : targetPlaceholder}
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-indigo-900"
+          className="field"
         />
         {!checked && (
           <button type="submit" className={`mt-3 ${PRIMARY}`}>
@@ -458,7 +456,8 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
       <div className="grid min-h-28 place-items-center py-4">
         <button
           onClick={() => playPhrase(ctx.item.target)}
-          className="flex items-center gap-2 rounded-full border border-indigo-300 px-5 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+          className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition active:translate-x-[1px] active:translate-y-[1px]"
+          style={{ border: "2px solid var(--edge)", background: "var(--surface)", color: "var(--ink)" }}
         >
           <svg width={20} height={20} viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -479,38 +478,26 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
         </button>
       </div>
       <div className="grid gap-2">
-        {choices.map((c, i) => {
-          const isCorrect = c === answer;
-          const isPicked = c === selected;
-          let cls =
-            "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800";
-          if (selected) {
-            if (isCorrect) cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40";
-            else if (isPicked) cls = "border-rose-500 bg-rose-50 dark:bg-rose-950/40";
-            else cls = "border-slate-200 opacity-60 dark:border-slate-800";
-          }
-          return (
-            <button
-              key={c + i}
-              disabled={!!selected}
-              onClick={() => setSelected(c)}
-              className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${cls}`}
-            >
-              {c}
-            </button>
-          );
-        })}
+        {choices.map((c, i) => (
+          <button
+            key={c + i}
+            disabled={!!selected}
+            onClick={() => setSelected(c)}
+            className="opt"
+            style={optStyle(selected, c, answer)}
+          >
+            {c}
+          </button>
+        ))}
       </div>
       {selected && (
         <div className="mt-4">
-          <div className="rounded-xl bg-slate-50 px-4 py-3 text-center dark:bg-slate-800/60">
-            <div className="flex items-center justify-center gap-2 text-lg font-semibold">
+          <div className="rounded-xl px-4 py-3 text-center" style={{ border: "2px solid var(--edge)", background: "var(--paper)" }}>
+            <div className="flex items-center justify-center gap-2 font-display text-lg">
               {ctx.item.target}
               <SpeakButton text={ctx.item.target} size="sm" />
             </div>
-            {reading && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">{reading}</span>
-            )}
+            {reading && <span className="text-xs" style={{ color: "var(--muted)" }}>{reading}</span>}
           </div>
           <ResultBar
             correct={selected === answer}
@@ -553,8 +540,8 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
       <Tag left="Speaking" right={`Say it in ${name}`} />
       <div className="grid min-h-44 place-items-center py-6 text-center">
         <div>
-          <p className="text-2xl font-semibold sm:text-3xl">{ctx.item.english}</p>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="font-display text-2xl sm:text-3xl">{ctx.item.english}</p>
+          <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
             Say it aloud in {name}, then check.
           </p>
         </div>
@@ -565,9 +552,9 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
         </button>
       ) : (
         <>
-          <div className="mb-5 flex flex-col items-center gap-1 border-t border-slate-200 pt-5 text-center dark:border-slate-800">
+          <div className="mb-5 flex flex-col items-center gap-1 pt-5 text-center" style={{ borderTop: "2px solid var(--edge)" }}>
             <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-medium text-indigo-700 dark:text-indigo-300">
+              <span className="font-display text-xl" style={{ color: "var(--accent)" }}>
                 {ctx.item.target}
               </span>
               <SpeakButton text={ctx.item.target} size="md" />
@@ -575,7 +562,7 @@ function SpeakingCard({ ctx, onGrade }: SubProps) {
             <Reading text={reading} />
           </div>
           <NoteLine text={ctx.item.note} />
-          <p className="mb-2 text-center text-xs text-slate-400">How did you do?</p>
+          <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>How did you do?</p>
           <GradeRow onGrade={onGrade} intervals={intervals} />
         </>
       )}
@@ -620,8 +607,8 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
       <Tag left="Fill the blank" right="Sentence" />
       <div className="grid min-h-28 place-items-center py-4 text-center">
         <div>
-          <p className="text-xl font-semibold sm:text-2xl">{sentenceWithBlank}</p>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{ctx.item.english}</p>
+          <p className="font-display text-xl sm:text-2xl">{sentenceWithBlank}</p>
+          <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>{ctx.item.english}</p>
         </div>
       </div>
       <form
@@ -635,8 +622,8 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
           value={input}
           disabled={!!checked}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Isi kata yang hilang…"
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-indigo-900"
+          placeholder="Type the missing word…"
+          className="field"
         />
         {!checked && (
           <button type="submit" className={`mt-3 ${PRIMARY}`}>
@@ -646,15 +633,9 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
       </form>
       {checked && (
         <div className="mt-4">
-          <div
-            className={`rounded-xl px-4 py-3 text-center text-sm ${
-              checked.correct
-                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-            }`}
-          >
+          <div className="rounded-xl px-4 py-3 text-center text-sm font-bold" style={checked.correct ? RESULT_OK : RESULT_NO}>
             {checked.correct ? (checked.fuzzy ? "Close enough — correct!" : "Correct!") : "Not quite."}
-            <div className="mt-1 flex items-center justify-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
+            <div className="mt-1 flex items-center justify-center gap-2 font-display text-base">
               {ctx.item.target}
               <SpeakButton text={ctx.item.target} size="sm" />
             </div>
@@ -697,20 +678,21 @@ function OrderCard({ ctx, onGrade }: SubProps) {
   return (
     <div className="card p-7">
       <Tag left="Word order" right="Sentence" />
-      <p className="mb-4 text-center text-sm text-slate-500 dark:text-slate-400">
-        Build: <span className="font-medium text-slate-700 dark:text-slate-200">{ctx.item.english}</span>
+      <p className="mb-4 text-center text-sm" style={{ color: "var(--muted)" }}>
+        Build: <span className="font-display font-bold" style={{ color: "var(--ink)" }}>{ctx.item.english}</span>
       </p>
 
-      <div className="mb-4 flex min-h-14 flex-wrap content-start gap-2 rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-700">
+      <div className="mb-4 flex min-h-14 flex-wrap content-start gap-2 rounded-xl p-3" style={{ border: "2px dashed var(--edge)" }}>
         {picked.length === 0 && (
-          <span className="text-sm text-slate-400">Tap words below…</span>
+          <span className="text-sm" style={{ color: "var(--muted)" }}>Tap words below…</span>
         )}
         {picked.map((idx, pos) => (
           <button
             key={`${idx}-${pos}`}
             disabled={result !== null}
             onClick={() => setPicked((p) => p.filter((_, k) => k !== pos))}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white"
+            className="rounded-lg px-3 py-1.5 text-sm font-bold"
+            style={{ border: "2px solid var(--edge)", background: "var(--accent)", color: "var(--accent-ink)" }}
           >
             {tokens[idx]}
           </button>
@@ -729,7 +711,7 @@ function OrderCard({ ctx, onGrade }: SubProps) {
                 setPicked(next);
                 if (next.length === tokens.length) check(next);
               }}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="word-chip"
             >
               {tokens[idx]}
             </button>
@@ -741,29 +723,19 @@ function OrderCard({ ctx, onGrade }: SubProps) {
           <button
             disabled={picked.length === 0}
             onClick={() => setPicked([])}
-            className="rounded-xl border border-slate-300 py-2.5 text-sm font-semibold disabled:opacity-50 dark:border-slate-700"
+            className="btn btn-secondary"
           >
             Reset
           </button>
-          <button
-            disabled={!allPlaced}
-            onClick={() => check(picked)}
-            className="rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
+          <button disabled={!allPlaced} onClick={() => check(picked)} className="btn btn-primary">
             Check
           </button>
         </div>
       ) : (
         <div className="mt-4">
-          <div
-            className={`rounded-xl px-4 py-3 text-center text-sm ${
-              result
-                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-            }`}
-          >
+          <div className="rounded-xl px-4 py-3 text-center text-sm font-bold" style={result ? RESULT_OK : RESULT_NO}>
             {result ? "Correct!" : "Not quite."}
-            <div className="mt-1 flex items-center justify-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
+            <div className="mt-1 flex items-center justify-center gap-2 font-display text-base">
               {ctx.item.target}
               <SpeakButton text={ctx.item.target} size="sm" />
             </div>
@@ -817,34 +789,24 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
       <Tag left="Which form?" right="Confusable" />
       <div className="grid min-h-28 place-items-center py-4 text-center">
         <div>
-          <p className="text-2xl font-semibold sm:text-3xl">{ctx.item.english}</p>
+          <p className="font-display text-2xl sm:text-3xl">{ctx.item.english}</p>
           {conf.note && (
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{conf.note}</p>
+            <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>{conf.note}</p>
           )}
         </div>
       </div>
       <div className="grid gap-2">
-        {choices.map((c, i) => {
-          const isCorrect = c === answer;
-          const isPicked = c === selected;
-          let cls =
-            "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800";
-          if (selected) {
-            if (isCorrect) cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40";
-            else if (isPicked) cls = "border-rose-500 bg-rose-50 dark:bg-rose-950/40";
-            else cls = "border-slate-200 opacity-60 dark:border-slate-800";
-          }
-          return (
-            <button
-              key={c + i}
-              disabled={!!selected}
-              onClick={() => setSelected(c)}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${cls}`}
-            >
-              <span className="font-medium">{c}</span>
-            </button>
-          );
-        })}
+        {choices.map((c, i) => (
+          <button
+            key={c + i}
+            disabled={!!selected}
+            onClick={() => setSelected(c)}
+            className="opt"
+            style={optStyle(selected, c, answer)}
+          >
+            <span>{c}</span>
+          </button>
+        ))}
       </div>
       {selected && (
         <ResultBar
@@ -862,9 +824,6 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
 }
 
 // ── word building (root ↔ affixed form) ──────────────────────────────────────
-
-const WB_INPUT =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-indigo-900";
 
 function WordBuildingCard({ ctx, onGrade }: SubProps) {
   const root = ctx.item.root ?? "";
@@ -898,12 +857,12 @@ function WordBuildingCard({ ctx, onGrade }: SubProps) {
       <div className="grid min-h-28 place-items-center py-4 text-center">
         <div>
           <div className="flex items-center justify-center gap-2">
-            <span className="text-2xl font-semibold sm:text-3xl">
+            <span className="font-display text-2xl sm:text-3xl">
               {forward ? root : derived}
             </span>
             <SpeakButton text={forward ? root : derived} size="md" />
           </div>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
             {forward ? `Build the form for: ${ctx.item.english}` : "Type the root word"}
           </p>
         </div>
@@ -920,7 +879,7 @@ function WordBuildingCard({ ctx, onGrade }: SubProps) {
           disabled={!!checked}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ketik dalam Bahasa Indonesia…"
-          className={WB_INPUT}
+          className="field"
         />
         {!checked && (
           <button type="submit" className={`mt-3 ${PRIMARY}`}>

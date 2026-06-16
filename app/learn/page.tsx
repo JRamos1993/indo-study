@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/Icon";
-import { hasWordBuilding } from "@/lib/affixes";
-import { hasConfusables } from "@/lib/confusables";
 import { getLessonGroups, getLessons, getLevelGroups } from "@/lib/data";
 import { getLanguage } from "@/lib/languages";
 import { masteryPercent, summarize, troubleItemIds, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
 import { currentStreak, todayCount, useStats } from "@/lib/stats";
+import type { Lesson } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
 
 type View = "category" | "difficulty";
@@ -21,41 +20,31 @@ export default function LearnDashboard() {
   const settings = useSettings();
   const lang = settings.studyLanguage;
   const langCfg = getLanguage(lang);
-  const f = langCfg.features;
   const dailyGoal = settings.dailyGoal;
   const [view, setView] = useState<View>("category");
 
   const groups = view === "category" ? getLessonGroups(lang) : getLevelGroups(lang);
-  const levelOf = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const lvl of getLevelGroups(lang)) for (const l of lvl.lessons) map[l.id] = lvl.title;
-    return map;
-  }, [lang]);
 
-  const practiceModes = useMemo(() => {
-    const m: { href: string; label: string; desc: string; icon: IconName }[] = [
-      { href: "/study/flashcards", label: "Flashcards", desc: "Flip & self-rate", icon: "cards" },
-      { href: "/quiz/mc", label: "Multiple choice", desc: "Pick the meaning", icon: "list" },
-      { href: "/quiz/type", label: "Type the answer", desc: "Active recall", icon: "keyboard" },
-      { href: "/study/listening", label: "Listening", desc: "Hear & choose", icon: "headphones" },
-      { href: "/study/speaking", label: "Speaking", desc: "Say it aloud", icon: "mic" },
-    ];
-    if (f.kana) m.push({ href: "/study/kana", label: "Alphabet", desc: "Hiragana & katakana", icon: "kana" });
-    if (f.kanji) m.push({ href: "/study/kanji", label: "Kanji", desc: "Characters & readings", icon: "kanji" });
-    if (f.cloze) m.push({ href: "/quiz/cloze", label: "Fill the blank", desc: "Sentence grammar", icon: "blank" });
-    if (f.order) m.push({ href: "/study/order", label: "Word order", desc: "Build sentences", icon: "sort" });
-    if (hasConfusables(lang))
-      m.push({ href: "/quiz/confusables", label: "Which form?", desc: "Confusable pairs", icon: "shuffle" });
-    if (f.wordBuilding && hasWordBuilding(lang))
-      m.push({ href: "/study/word-building", label: "Word building", desc: "Roots & affixes", icon: "blocks" });
-    m.push({ href: "/review", label: "Spaced review", desc: "Smart mix, all due", icon: "refresh" });
+  const order = useMemo(() => {
+    const m: Record<string, number> = {};
+    getLessons(lang).forEach((l, i) => (m[l.id] = i + 1));
     return m;
-  }, [lang, f.kana, f.kanji, f.cloze, f.order, f.wordBuilding]);
+  }, [lang]);
 
   const allIds = useMemo(
     () => getLessons(lang).flatMap((l) => l.sections.flatMap((s) => s.items.map((i) => i.id))),
     [lang],
   );
+
+  // Current unit = first (in path order) not yet fully mastered.
+  const currentId = useMemo(() => {
+    if (!mounted) return null;
+    for (const l of getLessons(lang)) {
+      const ids = l.sections.flatMap((s) => s.items.map((i) => i.id));
+      if (masteryPercent(store, ids) < 100) return l.id;
+    }
+    return null;
+  }, [mounted, store, lang]);
 
   const overall = summarize(store, allIds);
   const show = mounted;
@@ -67,29 +56,22 @@ export default function LearnDashboard() {
 
   return (
     <div>
-      <header className="mb-6 flex items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">
-            {langCfg.flag} {langCfg.name}
-          </p>
-          <h1 className="mt-1 text-[30px] leading-none">{langCfg.greeting}</h1>
-        </div>
+      <header className="mb-6">
+        <p className="eyebrow">
+          {langCfg.flag} {langCfg.name}
+        </p>
+        <h1 className="mt-1 text-[30px] leading-none">{langCfg.greeting}</h1>
       </header>
 
-      {/* Study today */}
+      {/* Daily session */}
       <Link
         href="/today"
-        className="mb-7 block rounded-2xl p-6"
-        style={{
-          background: "var(--accent)",
-          color: "var(--accent-ink)",
-          border: "2px solid var(--edge)",
-          boxShadow: "5px 5px 0 0 var(--edge)",
-        }}
+        className="mb-6 block rounded-2xl p-6"
+        style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--edge)" }}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="eyebrow" style={{ color: "currentColor", opacity: 0.8 }}>
+            <p className="eyebrow" style={{ color: "currentColor", opacity: 0.85 }}>
               Daily session
             </p>
             <h2 className="mt-1 text-2xl">{show && goalMet ? "Goal reached" : "Study today"}</h2>
@@ -101,10 +83,7 @@ export default function LearnDashboard() {
                   : `${overall.due} due${troubleCount > 0 ? ` · ${troubleCount} tricky` : ""} · a few new`}
             </p>
           </div>
-          <div
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5"
-            style={{ border: "2px solid var(--edge)", background: "rgba(255,255,255,0.12)" }}
-          >
+          <div className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ border: "2px solid var(--edge)", background: "rgba(255,255,255,0.14)" }}>
             <Icon name="flame" size={16} />
             <span className="font-display text-base font-bold">{show ? streak : "—"}</span>
           </div>
@@ -112,69 +91,31 @@ export default function LearnDashboard() {
         <div className="mt-5">
           <div className="mb-1.5 flex justify-between text-xs font-bold uppercase tracking-wide" style={{ opacity: 0.85 }}>
             <span>Today</span>
-            <span>
-              {show ? doneToday : 0} / {dailyGoal}
-            </span>
+            <span>{show ? doneToday : 0} / {dailyGoal}</span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.18)" }}>
+          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,0.2)" }}>
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${goalPct}%`, background: "var(--pop)" }} />
           </div>
         </div>
       </Link>
 
-      {show && troubleCount > 0 && (
-        <Link href="/review?trouble=1" className="card card-hover mb-7 flex items-center justify-between gap-4 p-5">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-xl text-rose-600 dark:text-rose-300" style={{ border: "2px solid var(--edge)" }}>
-              <Icon name="bolt" size={20} />
-            </span>
-            <div>
-              <h2 className="text-base">Trouble words</h2>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                {troubleCount} you keep missing — drill just these.
-              </p>
-            </div>
-          </div>
-          <span className="chip text-white" style={{ background: "#e11d48", border: "2px solid var(--edge)" }}>
-            Practice
-          </span>
-        </Link>
-      )}
-
-      <h2 className="section-label">Ways to practice</h2>
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {practiceModes.map((m) => (
-          <Link key={m.href} href={m.href} className="card card-hover flex items-start gap-3 p-3.5">
-            <span
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg"
-              style={{ border: "2px solid var(--edge)", background: "var(--pop)", color: "#14151a" }}
-            >
-              <Icon name={m.icon} size={20} />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-display text-sm font-bold leading-tight">{m.label}</span>
-              <span className="mt-0.5 block text-xs" style={{ color: "var(--muted)" }}>
-                {m.desc}
-              </span>
-            </span>
-          </Link>
-        ))}
+      {/* Quick links */}
+      <div className="mb-8 grid grid-cols-3 gap-3">
+        <QuickLink href="/practice" icon="blocks" label="Practice" />
+        <QuickLink href="/review" icon="refresh" label="Review" />
+        <QuickLink href="/glossary" icon="book" label="Glossary" />
       </div>
 
-      {/* Course with grouping toggle */}
+      {/* Path */}
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="section-label mb-0">Your course</h2>
+        <h2 className="section-label mb-0">Your path</h2>
         <div className="inline-flex overflow-hidden rounded-lg" style={{ border: "2px solid var(--edge)" }}>
           {(["category", "difficulty"] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className="px-3 py-1 text-xs font-bold uppercase tracking-wide transition"
-              style={
-                view === v
-                  ? { background: "var(--edge)", color: "var(--paper)" }
-                  : { background: "transparent", color: "var(--muted)" }
-              }
+              style={view === v ? { background: "var(--edge)", color: "var(--paper)" } : { color: "var(--muted)" }}
             >
               {v === "category" ? "Topic" : "Level"}
             </button>
@@ -182,60 +123,108 @@ export default function LearnDashboard() {
         </div>
       </div>
 
-      <div className="space-y-7">
+      <div className="space-y-6">
         {groups.map((group) => (
           <section key={group.title}>
-            <div className="mb-3 flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-md" style={{ border: "2px solid var(--edge)" }}>
-                <Icon name={group.icon as IconName} size={15} />
+            <div className="mb-2.5 flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-md" style={{ border: "2px solid var(--edge)" }}>
+                <Icon name={group.icon as IconName} size={13} />
               </span>
-              <h3 className="text-base">{group.title}</h3>
+              <h3 className="text-sm">{group.title}</h3>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {group.lessons.map((lesson) => {
-                const ids = lesson.sections.flatMap((s) => s.items.map((i) => i.id));
-                const sum = summarize(store, ids);
-                const pct = show ? masteryPercent(store, ids) : 0;
-                return (
-                  <Link key={lesson.id} href={`/lessons/${lesson.id}`} className="card card-hover p-4">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-display font-bold">{lesson.title}</span>
-                      {show && sum.due > 0 ? (
-                        <span className="chip shrink-0 text-amber-900 dark:text-amber-200" style={{ background: "#fde68a", border: "1.5px solid var(--edge)" }}>
-                          {sum.due} due
-                        </span>
-                      ) : (
-                        view === "category" && (
-                          <span className="chip shrink-0" style={{ color: "var(--muted)", border: "1.5px solid var(--edge)" }}>
-                            {levelOf[lesson.id]}
-                          </span>
-                        )
-                      )}
-                    </div>
-                    <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
-                      <div className="h-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
-                    </div>
-                    <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-                      {ids.length} items{show ? ` · ${pct}% mastered` : ""}
-                    </p>
-                  </Link>
-                );
-              })}
+            <div className="space-y-2.5">
+              {group.lessons.map((lesson) => (
+                <UnitRow
+                  key={lesson.id}
+                  lesson={lesson}
+                  n={order[lesson.id]}
+                  store={store}
+                  show={show}
+                  current={lesson.id === currentId}
+                />
+              ))}
             </div>
           </section>
         ))}
       </div>
 
       <footer className="mt-12 pt-6 text-xs" style={{ borderTop: "2px solid var(--edge)", color: "var(--muted)" }}>
-        <p className="mb-2 flex flex-wrap gap-x-4 gap-y-1">
-          <Link href="/glossary" className="font-bold" style={{ color: "var(--accent)" }}>Glossary</Link>
-          <Link href="/guide/pronunciation" className="font-bold" style={{ color: "var(--accent)" }}>Pronunciation</Link>
+        <p className="flex flex-wrap gap-x-4 gap-y-1">
           <Link href="/stats" className="font-bold" style={{ color: "var(--accent)" }}>Stats</Link>
+          <Link href="/guide/pronunciation" className="font-bold" style={{ color: "var(--accent)" }}>Pronunciation</Link>
           <Link href="/settings" className="font-bold" style={{ color: "var(--accent)" }}>Settings</Link>
-          <Link href="/" className="font-bold" style={{ color: "var(--accent)" }}>About Lingo</Link>
+          <Link href="/" className="font-bold" style={{ color: "var(--accent)" }}>About</Link>
         </p>
-        <p>Progress is saved in this browser. Audio uses your device&apos;s {langCfg.name} voice when available.</p>
       </footer>
     </div>
+  );
+}
+
+function QuickLink({ href, icon, label }: { href: string; icon: IconName; label: string }) {
+  return (
+    <Link href={href} className="card card-hover flex flex-col items-center gap-1.5 p-3 text-center">
+      <span style={{ color: "var(--accent)" }}>
+        <Icon name={icon} size={20} />
+      </span>
+      <span className="text-sm font-bold">{label}</span>
+    </Link>
+  );
+}
+
+function UnitRow({
+  lesson,
+  n,
+  store,
+  show,
+  current,
+}: {
+  lesson: Lesson;
+  n: number;
+  store: ReturnType<typeof useProgress>;
+  show: boolean;
+  current: boolean;
+}) {
+  const ids = lesson.sections.flatMap((s) => s.items.map((i) => i.id));
+  const sum = summarize(store, ids);
+  const pct = show ? masteryPercent(store, ids) : 0;
+  const done = pct >= 100;
+
+  return (
+    <Link
+      href={`/lessons/${lesson.id}`}
+      className="card card-hover flex items-center gap-3.5 p-3.5"
+      style={current ? { boxShadow: "4px 4px 0 0 var(--accent)" } : undefined}
+    >
+      <span
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-display text-sm font-bold"
+        style={
+          done
+            ? { background: "var(--pop)", color: "#14151a", border: "2px solid var(--edge)" }
+            : current
+              ? { background: "var(--accent)", color: "var(--accent-ink)", border: "2px solid var(--edge)" }
+              : { border: "2px solid var(--edge)", color: "var(--muted)" }
+        }
+      >
+        {done ? <Icon name="target" size={18} /> : n}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate font-display font-bold">{lesson.title}</span>
+          {current && (
+            <span className="chip shrink-0" style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "1.5px solid var(--edge)" }}>
+              Continue
+            </span>
+          )}
+        </div>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
+          <div className="h-full" style={{ width: `${pct}%`, background: "var(--accent)" }} />
+        </div>
+      </div>
+      {show && sum.due > 0 && (
+        <span className="chip shrink-0" style={{ background: "var(--pop)", color: "#14151a", border: "1.5px solid var(--edge)" }}>
+          {sum.due} due
+        </span>
+      )}
+    </Link>
   );
 }

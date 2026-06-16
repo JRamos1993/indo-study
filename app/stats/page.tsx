@@ -26,7 +26,7 @@ export default function StatsPage() {
     return (
       <div>
         <Header />
-        <div className="card grid h-40 place-items-center text-slate-400">Loading…</div>
+        <div className="card grid h-40 place-items-center" style={{ color: "var(--muted)" }}>Loading…</div>
       </div>
     );
   }
@@ -50,41 +50,39 @@ export default function StatsPage() {
 
       <div className="card mb-6 p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">Daily goal</h2>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="text-lg">Daily goal</h2>
+          <span className="text-sm font-bold" style={{ color: "var(--muted)" }}>
             {today >= dailyGoal ? "Reached 🎉" : `${dailyGoal - today} to go`}
           </span>
         </div>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div className="h-3 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all"
-            style={{ width: `${Math.min(100, (today / dailyGoal) * 100)}%` }}
+            className="h-full transition-all"
+            style={{ width: `${Math.min(100, (today / dailyGoal) * 100)}%`, background: "var(--accent)" }}
           />
         </div>
       </div>
 
       <div className="card mb-6 p-5">
-        <h2 className="mb-4 font-semibold">Reviews due — next 7 days</h2>
+        <h2 className="mb-4 text-lg">Reviews due — next 7 days</h2>
         <div className="flex items-end justify-between gap-2" style={{ height: 120 }}>
           {forecast.map((n, i) => (
             <div key={i} className="flex flex-1 flex-col items-center gap-2">
               <div className="flex w-full flex-1 items-end">
                 <div
-                  className="w-full rounded-t-md bg-indigo-500/80"
-                  style={{ height: `${(n / maxF) * 100}%`, minHeight: n > 0 ? 4 : 0 }}
+                  className="w-full rounded-t-md"
+                  style={{ height: `${(n / maxF) * 100}%`, minHeight: n > 0 ? 4 : 0, background: "var(--accent)", border: n > 0 ? "1.5px solid var(--edge)" : undefined }}
                   title={`${n} due`}
                 />
               </div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">{dayNames[i]}</span>
-              <span className="text-[11px] font-semibold">{n}</span>
+              <span className="text-[11px] font-bold" style={{ color: "var(--muted)" }}>{dayNames[i]}</span>
+              <span className="text-[11px] font-bold">{n}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-        By lesson
-      </h2>
+      <h2 className="section-label">By lesson</h2>
       <div className="space-y-4">
         {lessons.map((lesson) => {
           const lessonIds = lesson.sections.flatMap((s) => s.items.map((i) => i.id));
@@ -92,17 +90,14 @@ export default function StatsPage() {
           return (
             <div key={lesson.id} className="card p-5">
               <div className="flex items-center justify-between">
-                <Link
-                  href={`/lessons/${lesson.id}`}
-                  className="font-semibold hover:text-indigo-600"
-                >
+                <Link href={`/lessons/${lesson.id}`} className="font-display font-bold">
                   {lesson.title}
                 </Link>
-                <span className="text-sm text-slate-500 dark:text-slate-400">
+                <span className="text-sm font-bold" style={{ color: "var(--muted)" }}>
                   {ls.mastered}/{ls.total} mastered
                 </span>
               </div>
-              <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
                 <Seg n={ls.mastered} total={ls.total} cls="bg-emerald-500" />
                 <Seg n={ls.review} total={ls.total} cls="bg-sky-500" />
                 <Seg n={ls.learning} total={ls.total} cls="bg-amber-400" />
@@ -115,10 +110,7 @@ export default function StatsPage() {
       <BackupCard />
 
       <div className="mt-6">
-        <Link
-          href="/guide/pronunciation"
-          className="text-sm font-medium text-indigo-600 hover:underline"
-        >
+        <Link href="/guide/pronunciation" className="text-sm font-bold hover:underline" style={{ color: "var(--accent)" }}>
           Pronunciation guide →
         </Link>
       </div>
@@ -155,22 +147,16 @@ function BackupCard() {
 
   return (
     <div className="card mt-6 p-5">
-      <h2 className="font-semibold">Backup &amp; move devices</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <h2 className="text-lg">Backup &amp; move devices</h2>
+      <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
         Progress lives in this browser only. Export a file, then import it on another
         device to carry your streak and mastery across.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          onClick={onExport}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-        >
+        <button onClick={onExport} className="btn btn-primary">
           Export progress
         </button>
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-        >
+        <button onClick={() => fileRef.current?.click()} className="btn btn-secondary">
           Import progress
         </button>
         <input
@@ -185,9 +171,7 @@ function BackupCard() {
           }}
         />
       </div>
-      {msg && (
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{msg}</p>
-      )}
+      {msg && <p className="mt-3 text-sm font-bold" style={{ color: "var(--accent)" }}>{msg}</p>}
     </div>
   );
 }
@@ -195,10 +179,10 @@ function BackupCard() {
 function Header() {
   return (
     <div className="mb-6">
-      <Link href="/learn" className="text-sm text-slate-500 hover:text-indigo-600">
+      <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
         ← Back
       </Link>
-      <h1 className="mt-2 text-2xl font-bold tracking-tight">Your progress</h1>
+      <h1 className="mt-2 text-2xl">Your progress</h1>
     </div>
   );
 }
@@ -206,8 +190,8 @@ function Header() {
 function Stat({ big, label }: { big: string; label: string }) {
   return (
     <div className="card p-4 text-center">
-      <div className="text-2xl font-bold">{big}</div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="font-display text-2xl font-bold">{big}</div>
+      <div className="mt-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>{label}</div>
     </div>
   );
 }

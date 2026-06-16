@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
@@ -28,6 +28,7 @@ const MODE_LABEL: Record<Mode, string> = {
   type: "Type the answer",
   mixed: "Spaced review",
   daily: "Today's study",
+  unit: "Study unit",
   listening: "Listening",
   speaking: "Speaking practice",
   cloze: "Fill in the blank",
@@ -75,6 +76,8 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const params = useSearchParams();
   const mounted = useMounted();
   const store = useProgress();
+  const storeRef = useRef(store);
+  storeRef.current = store;
   const settings = useSettings();
   const statsData = useStats();
 
@@ -126,7 +129,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
       const ids = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
       base = allItems.filter((c) => ids.has(c.item.id));
     } else if (dueOnly) {
-      base = getAllItems().filter((c) => isDue(store[c.item.id]));
+      base = getScopedItems({ lessonId, sectionId }).filter((c) => isDue(store[c.item.id]));
       // Soft daily cap on brand-new items so review isn't overwhelming.
       const allowedNew = Math.max(0, settings.newPerDay - getNewIntroducedToday());
       let usedNew = 0;
@@ -170,7 +173,11 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const makeCard = useCallback(
     (ctx: ItemContext): Card => {
       const speechOK = speechSupported();
-      const sub = resolveSub(pickSub(mode), ctx, speechOK);
+      // Guided unit study: introduce never-seen words as flashcards, quiz the rest.
+      const sub =
+        mode === "unit" && isNew(storeRef.current[ctx.item.id])
+          ? "flashcards"
+          : resolveSub(pickSub(mode === "unit" ? "mixed" : mode), ctx, speechOK);
       const dir: Direction =
         sub === "listening"
           ? "id2en"
@@ -223,24 +230,25 @@ export function PracticeSession({ mode }: { mode: Mode }) {
       <SessionShell title={MODE_LABEL[mode]} subtitle={subtitle}>
         <div className="card p-6 text-center">
           <div className="text-5xl">{acc >= 80 ? "🎉" : acc >= 50 ? "👍" : "💪"}</div>
-          <h2 className="mt-3 text-xl font-semibold">Session complete</h2>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
+          <h2 className="mt-3 text-xl">Session complete</h2>
+          <p className="mt-1 font-bold" style={{ color: "var(--ink)" }}>
             {stats.correct} / {total} correct · {acc}% accuracy
           </p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
             {currentStreak(statsData)}🔥 streak · {todayCount(statsData)}/{settings.dailyGoal}{" "}
             today
           </p>
           {wrong.length > 0 && (
-            <div className="mx-auto mt-5 max-w-sm rounded-xl bg-rose-50 px-4 py-3 text-left text-sm dark:bg-rose-950/30">
-              <p className="mb-1 font-semibold text-rose-700 dark:text-rose-300">
-                Focus next time
-              </p>
-              <ul className="space-y-0.5 text-slate-700 dark:text-slate-300">
+            <div
+              className="mx-auto mt-5 max-w-sm rounded-xl px-4 py-3 text-left text-sm"
+              style={{ border: "2px solid var(--edge)", background: "color-mix(in srgb, var(--pop) 16%, transparent)" }}
+            >
+              <p className="section-label mb-1.5">Focus next time</p>
+              <ul className="space-y-1">
                 {wrong.slice(0, 6).map((w) => (
-                  <li key={w.item.id}>
-                    <span className="font-medium">{w.item.target}</span> —{" "}
-                    {w.item.english}
+                  <li key={w.item.id} className="flex gap-2">
+                    <span className="font-display font-bold">{w.item.target}</span>
+                    <span style={{ color: "var(--muted)" }}>— {w.item.english}</span>
                   </li>
                 ))}
               </ul>
@@ -248,17 +256,14 @@ export function PracticeSession({ mode }: { mode: Mode }) {
           )}
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {wrong.length > 0 && (
-              <button
-                onClick={() => setPracticeWrong(wrong)}
-                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-              >
+              <button onClick={() => setPracticeWrong(wrong)} className="btn btn-primary">
                 Practice {wrong.length} missed
               </button>
             )}
             {!practiceWrong && remainingInCorpus > 0 && (
               <button
                 onClick={() => setBatchStart((s) => s + SESSION_CAP)}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="btn btn-secondary"
               >
                 Next {Math.min(SESSION_CAP, remainingInCorpus)}
               </button>
@@ -268,14 +273,11 @@ export function PracticeSession({ mode }: { mode: Mode }) {
                 setPracticeWrong(null);
                 setBatchStart(0);
               }}
-              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="btn btn-secondary"
             >
               Restart
             </button>
-            <Link
-              href="/learn"
-              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-            >
+            <Link href="/learn" className="btn btn-secondary">
               Done
             </Link>
           </div>
@@ -321,7 +323,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   return (
     <SessionShell title={MODE_LABEL[mode]} subtitle={subtitle}>
       <div className="mb-4">
-        <div className="mb-1 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+        <div className="mb-1.5 flex justify-between text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
           <span>
             {progressN} / {totalThisBatch}
             {queue.length > 1 ? ` · ${queue.length} in queue` : ""}
@@ -330,10 +332,10 @@ export function PracticeSession({ mode }: { mode: Mode }) {
             {stats.answered ? `${Math.round((stats.correct / stats.answered) * 100)}%` : ""}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--paper)", border: "1.5px solid var(--edge)" }}>
           <div
-            className="h-full rounded-full bg-indigo-600 transition-all"
-            style={{ width: `${totalThisBatch ? (progressN / totalThisBatch) * 100 : 0}%` }}
+            className="h-full transition-all"
+            style={{ width: `${totalThisBatch ? (progressN / totalThisBatch) * 100 : 0}%`, background: "var(--accent)" }}
           />
         </div>
       </div>
@@ -342,7 +344,8 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         <div className="mb-2 text-right">
           <button
             onClick={undoLast}
-            className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-indigo-600 hover:underline"
+            className="text-xs font-bold underline-offset-2 hover:underline"
+            style={{ color: "var(--muted)" }}
           >
             ↩ Undo last grade
           </button>
@@ -372,11 +375,11 @@ function SessionShell({
   return (
     <div>
       <div className="mb-5">
-        <Link href="/learn" className="text-sm text-slate-500 hover:text-indigo-600">
+        <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
           ← Back
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
+        <h1 className="mt-2 text-2xl">{title}</h1>
+        {subtitle && <p className="text-sm" style={{ color: "var(--muted)" }}>{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -384,7 +387,11 @@ function SessionShell({
 }
 
 function Loading() {
-  return <div className="card grid h-56 place-items-center text-slate-400">Loading…</div>;
+  return (
+    <div className="card grid h-56 place-items-center" style={{ color: "var(--muted)" }}>
+      Loading…
+    </div>
+  );
 }
 
 function EmptyState({ reason }: { reason: "due" | "trouble" | "scope" | "daily" }) {
@@ -413,12 +420,9 @@ function EmptyState({ reason }: { reason: "due" | "trouble" | "scope" | "daily" 
   return (
     <div className="card p-8 text-center">
       <div className="text-4xl">{copy.icon}</div>
-      <h2 className="mt-3 text-lg font-semibold">{copy.title}</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{copy.body}</p>
-      <Link
-        href="/learn"
-        className="mt-5 inline-block rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-      >
+      <h2 className="mt-3 text-lg">{copy.title}</h2>
+      <p className="mx-auto mt-1 max-w-sm text-sm" style={{ color: "var(--muted)" }}>{copy.body}</p>
+      <Link href="/learn" className="btn btn-primary mt-5">
         Go home
       </Link>
     </div>

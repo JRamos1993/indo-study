@@ -14,14 +14,14 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/learn" className="text-sm text-slate-500 hover:text-indigo-600">
+        <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
           ← Back
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Settings</h1>
+        <h1 className="mt-2 text-2xl">Settings</h1>
       </div>
 
       {!mounted ? (
-        <div className="card grid h-40 place-items-center text-slate-400">Loading…</div>
+        <div className="card grid h-40 place-items-center" style={{ color: "var(--muted)" }}>Loading…</div>
       ) : (
         <div className="space-y-4">
           <Row label="Study language" hint="Which language you're learning">
@@ -84,8 +84,8 @@ export default function SettingsPage() {
               className={selectCls}
             >
               <option value="auto">Auto (mixed)</option>
-              <option value="id2en">Indonesian → English</option>
-              <option value="en2id">English → Indonesian</option>
+              <option value="id2en">{getLanguage(s.studyLanguage).name} → English</option>
+              <option value="en2id">English → {getLanguage(s.studyLanguage).name}</option>
             </select>
           </Row>
 
@@ -101,9 +101,9 @@ export default function SettingsPage() {
             </select>
           </Row>
 
-          <div className="card p-5">
-            <h2 className="font-semibold text-rose-700 dark:text-rose-300">Danger zone</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="card p-5" style={{ borderColor: "#e5484d" }}>
+            <h2 className="text-lg" style={{ color: "#e5484d" }}>Danger zone</h2>
+            <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
               Erase all spaced-repetition progress and stats on this device. Export a backup
               first from the Stats page if you want to keep it.
             </p>
@@ -114,7 +114,8 @@ export default function SettingsPage() {
                   resetStats();
                 }
               }}
-              className="mt-3 rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40"
+              className="mt-3 rounded-lg px-3 py-1.5 text-sm font-bold transition active:translate-x-[1px] active:translate-y-[1px]"
+              style={{ border: "2px solid #e5484d", color: "#e5484d" }}
             >
               Reset everything
             </button>
@@ -126,7 +127,7 @@ export default function SettingsPage() {
 }
 
 const selectCls =
-  "rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900";
+  "rounded-lg border-2 border-[color:var(--edge)] bg-[var(--surface)] px-3 py-1.5 text-sm font-bold outline-none";
 
 function Row({
   label,
@@ -140,8 +141,8 @@ function Row({
   return (
     <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
       <div>
-        <div className="font-medium">{label}</div>
-        <div className="text-sm text-slate-500 dark:text-slate-400">{hint}</div>
+        <div className="font-display font-bold">{label}</div>
+        <div className="text-sm" style={{ color: "var(--muted)" }}>{hint}</div>
       </div>
       {children}
     </div>
@@ -162,7 +163,7 @@ function Stepper({
   onChange: (n: number) => void;
 }) {
   const btn =
-    "h-9 w-9 rounded-lg border border-slate-300 text-lg font-semibold hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:hover:bg-slate-800";
+    "h-9 w-9 rounded-lg border-2 border-[color:var(--edge)] bg-[var(--surface)] text-lg font-bold transition active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-40";
   return (
     <div className="flex items-center gap-2">
       <button

@@ -34,7 +34,8 @@ export function SpeakButton({
         e.stopPropagation();
         playPhrase(text);
       }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-50 active:scale-95 dark:text-indigo-300 dark:hover:bg-indigo-950/60 ${dim} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full transition active:scale-95 ${dim} ${className}`}
+      style={{ color: "var(--accent)" }}
     >
       <svg width={icon} height={icon} viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path

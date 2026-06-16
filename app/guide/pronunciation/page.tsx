@@ -85,11 +85,11 @@ export default function PronunciationGuide() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/learn" className="text-sm text-slate-500 hover:text-indigo-600">
+        <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
           ← Back
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">{g.title}</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{g.intro}</p>
+        <h1 className="mt-2 text-2xl">{g.title}</h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{g.intro}</p>
       </div>
 
       {g.sections.map((s) => (
@@ -97,15 +97,15 @@ export default function PronunciationGuide() {
       ))}
 
       <div className="card mt-6 space-y-3 p-5 text-sm leading-relaxed">
-        <h2 className="font-semibold">A few more tips</h2>
+        <h2 className="text-lg">A few more tips</h2>
         {g.tips.map(([head, body]) => (
           <p key={head}>
-            <b>{head}</b> {body}
+            <b className="font-display">{head}</b> {body}
           </p>
         ))}
       </div>
 
-      <p className="mt-6 text-xs text-slate-400">
+      <p className="mt-6 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
         Use the speaker icons anywhere in the app to hear words aloud.
       </p>
     </div>
@@ -115,17 +115,17 @@ export default function PronunciationGuide() {
 function Section({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <div className="card mb-5 overflow-hidden">
-      <h2 className="border-b border-slate-200 px-5 py-3 font-semibold dark:border-slate-800">
+      <h2 className="px-5 py-3 text-base" style={{ borderBottom: "2px solid var(--edge)" }}>
         {title}
       </h2>
-      <ul className="divide-y divide-slate-100 dark:divide-slate-800/70">
+      <ul className="divide-y" style={{ borderColor: "color-mix(in srgb, var(--edge) 25%, transparent)" }}>
         {rows.map(([letter, how, ex]) => (
-          <li key={letter} className="flex flex-wrap items-baseline gap-x-3 px-5 py-2.5 text-sm">
-            <span className="w-24 shrink-0 font-bold text-indigo-700 dark:text-indigo-300">
+          <li key={letter} className="flex flex-wrap items-baseline gap-x-3 px-5 py-2.5 text-sm" style={{ borderColor: "color-mix(in srgb, var(--edge) 25%, transparent)" }}>
+            <span className="w-24 shrink-0 font-display font-bold" style={{ color: "var(--accent)" }}>
               {letter}
             </span>
             <span className="flex-1">{how}</span>
-            <span className="text-slate-500 dark:text-slate-400">{ex}</span>
+            <span style={{ color: "var(--muted)" }}>{ex}</span>
           </li>
         ))}
       </ul>

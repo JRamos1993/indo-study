@@ -28,6 +28,8 @@ const NAV: NavDef[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (pathname === "/") return <LandingFrame>{children}</LandingFrame>;
+  // Onboarding is a focused full-screen flow with no app chrome.
+  if (pathname.startsWith("/onboarding")) return <>{children}</>;
   return <AppFrame pathname={pathname}>{children}</AppFrame>;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { getAffixPairs } from "@/lib/affixes";
@@ -407,16 +407,21 @@ function SessionShell({
   subtitle?: string;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/today");
+  };
   return (
     <div className="mx-auto w-full max-w-[600px]">
       <div className="mb-5">
-        <Link
-          href="/learn"
+        <button
+          onClick={goBack}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-extrabold transition active:translate-x-[1px] active:translate-y-[1px] hover:-translate-y-0.5"
           style={{ background: "var(--surface)", color: "var(--ink)", border: "2px solid var(--edge)" }}
         >
           <Icon name="arrow" size={14} strokeWidth={2.4} className="-scale-x-100" /> Back
-        </Link>
+        </button>
         <h1 className="mt-3 text-[26px] leading-none">{title}</h1>
         {subtitle && (
           <p className="mt-1.5 text-[13px] font-bold" style={{ color: "var(--muted)" }}>{subtitle}</p>

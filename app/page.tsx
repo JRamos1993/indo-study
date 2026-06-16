@@ -23,7 +23,7 @@ export default function Landing() {
   const router = useRouter();
   const start = (l: LangId) => {
     updateSettings({ studyLanguage: l });
-    router.push("/today");
+    router.push(`/onboarding?lang=${l}`);
   };
 
   return (

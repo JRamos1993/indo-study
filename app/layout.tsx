@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeManager } from "@/components/ThemeManager";
 
@@ -39,15 +39,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${display.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${sans.variable} ${display.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
       <body>
         <ThemeManager />
         <RegisterSW />
-        <Nav />
-        <main className="mx-auto w-full max-w-3xl px-4 pb-28 pt-6">{children}</main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

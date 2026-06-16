@@ -19,7 +19,22 @@ export type IconName =
   | "flame"
   | "book"
   | "target"
-  | "bolt";
+  | "bolt"
+  // Lilt nav + utility glyphs
+  | "sun"
+  | "course"
+  | "doc"
+  | "bars"
+  | "people"
+  | "check"
+  | "arrow"
+  | "lock"
+  | "play"
+  | "search"
+  | "star"
+  | "plus"
+  | "gear"
+  | "grammar";
 
 const glyph = (ch: string): ReactNode => (
   <text x="12" y="17" textAnchor="middle" fontSize="15" stroke="none" fill="currentColor">
@@ -121,15 +136,67 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" />
+    </>
+  ),
+  course: (
+    <path d="M4 5a2 2 0 0 1 2-2h6v17H6a2 2 0 0 0-2 2zM20 5a2 2 0 0 0-2-2h-6v17h6a2 2 0 0 1 2 2z" />
+  ),
+  doc: (
+    <>
+      <path d="M5 3h11l3 3v15H5z" />
+      <path d="M9 8h7M9 12h7M9 16h4" />
+    </>
+  ),
+  bars: <path d="M4 20V11M10 20V4M16 20v-6M3 20h18" />,
+  people: (
+    <>
+      <circle cx="8.5" cy="9" r="3" />
+      <path d="M3 19a5.5 5.5 0 0 1 11 0" />
+      <circle cx="16.5" cy="8" r="2.4" />
+      <path d="M15 18a5 5 0 0 1 6.5-4" />
+    </>
+  ),
+  check: <path d="M5 12l5 5L19 7" />,
+  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </>
+  ),
+  star: (
+    <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.3l5.9-.9z" />
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c0 .35.12.7.33 1Z" />
+    </>
+  ),
+  grammar: glyph("Aa"),
 };
 
 export function Icon({
   name,
   size = 22,
+  strokeWidth = 1.7,
   className = "",
 }: {
   name: IconName;
   size?: number;
+  strokeWidth?: number;
   className?: string;
 }) {
   return (
@@ -139,7 +206,7 @@ export function Icon({
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.7}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}

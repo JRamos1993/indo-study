@@ -7,6 +7,7 @@ import { Icon, type IconName } from "@/components/Icon";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { dueItemIds, useProgress } from "@/lib/progress";
+import { useProfile } from "@/lib/profile";
 import { updateSettings, useSettings } from "@/lib/settings";
 import { isNew } from "@/lib/srs";
 import { useMounted } from "@/lib/useMounted";
@@ -105,6 +106,8 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
   const store = useProgress();
   const mounted = useMounted();
   const lang = useSettings().studyLanguage;
+  const profile = useProfile();
+  const initial = (profile.name.trim()[0] || "L").toUpperCase();
   const allIds = useMemo(() => getAllItems(lang).map((c) => c.item.id), [lang]);
   // "Reviews due" = scheduled items past due, excluding never-seen ones
   // (isDue(undefined) is true, so new items must be filtered out here).
@@ -119,12 +122,12 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
       >
         <Link href="/" aria-label="Lilt — home"><Logo /></Link>
         <Link
-          href="/settings"
-          aria-label="Settings"
-          className="grid h-9 w-9 place-items-center rounded-xl"
-          style={{ color: "var(--muted)" }}
+          href="/profile"
+          aria-label="Profile"
+          className="grid h-9 w-9 place-items-center rounded-full font-display text-[15px] font-extrabold"
+          style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
         >
-          <Icon name="gear" size={20} />
+          {initial}
         </Link>
       </header>
 
@@ -146,11 +149,21 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
         </nav>
         <div className="mt-auto flex flex-col gap-2 pt-4">
           <Link
-            href="/settings"
-            className="flex items-center gap-2.5 rounded-[13px] px-3 py-2.5 text-[14px] font-bold transition"
-            style={{ color: "var(--text-body)" }}
+            href="/profile"
+            className="flex items-center gap-2.5 rounded-[13px] p-2 transition"
+            style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
           >
-            <Icon name="gear" size={19} /> Settings
+            <span
+              className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] font-display text-[14px] font-extrabold"
+              style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
+            >
+              {initial}
+            </span>
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block truncate text-[13.5px] font-extrabold" style={{ color: "var(--ink)" }}>{profile.name}</span>
+              <span className="block text-[11px] font-bold" style={{ color: "var(--muted)" }}>View profile</span>
+            </span>
+            <Icon name="arrow" size={15} strokeWidth={2.2} />
           </Link>
           <LangSwitcher lang={lang} />
         </div>

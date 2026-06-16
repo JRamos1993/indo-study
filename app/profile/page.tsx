@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { logout, useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, getLanguage } from "@/lib/languages";
 import { masteryPercent, summarize, useProgress } from "@/lib/progress";
@@ -19,6 +20,7 @@ function levelLabel(pct: number): string {
 
 export default function ProfilePage() {
   const profile = useProfile();
+  const auth = useAuth();
   const store = useProgress();
   const stats = useStats();
   const settings = useSettings();
@@ -151,21 +153,43 @@ export default function ProfilePage() {
         style={{ background: "var(--lilt-ink)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--lilt-violet)", color: "#fff" }}
       >
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px]" style={{ background: "#332b52", border: "2px solid var(--lilt-lime)", color: "var(--lilt-lime)" }}>
-          <Icon name="refresh" size={24} strokeWidth={2} />
+          <Icon name={auth.user ? "check" : "refresh"} size={24} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="font-display text-[17px] font-extrabold text-white">Sync across devices</div>
-          <div className="mt-0.5 text-[13px] font-bold" style={{ color: "#b8b0da" }}>
-            Your progress lives on this device. Create an account to carry your streak and mastery
-            to your phone — and to join a Circle.
-          </div>
+          {auth.user ? (
+            <>
+              <div className="font-display text-[17px] font-extrabold text-white">Signed in &amp; syncing</div>
+              <div className="mt-0.5 truncate text-[13px] font-bold" style={{ color: "#b8b0da" }}>
+                {auth.user.email}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-display text-[17px] font-extrabold text-white">Sync across devices</div>
+              <div className="mt-0.5 text-[13px] font-bold" style={{ color: "#b8b0da" }}>
+                Your progress lives on this device. Create an account to carry your streak and
+                mastery to your phone — and to join a Circle.
+              </div>
+            </>
+          )}
         </div>
-        <span
-          className="shrink-0 rounded-full px-5 py-2.5 text-center text-[13px] font-extrabold"
-          style={{ background: "#332b52", color: "var(--lilt-lime)", border: "2px solid var(--lilt-lime)" }}
-        >
-          Coming soon
-        </span>
+        {auth.user ? (
+          <button
+            onClick={() => logout()}
+            className="shrink-0 rounded-full px-5 py-2.5 text-center text-[13px] font-extrabold transition active:translate-y-0.5"
+            style={{ background: "#332b52", color: "#fff", border: "2px solid var(--lilt-coral)" }}
+          >
+            Sign out
+          </button>
+        ) : (
+          <Link
+            href="/signin"
+            className="shrink-0 rounded-full px-5 py-2.5 text-center font-display text-[14px] font-extrabold transition active:translate-y-0.5"
+            style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--lilt-lime)" }}
+          >
+            {auth.status === "loading" ? "…" : "Create account"}
+          </Link>
+        )}
       </div>
 
       {/* Preferences + data */}

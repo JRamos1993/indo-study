@@ -28,8 +28,8 @@ const NAV: NavDef[] = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Onboarding is a focused full-screen flow with no app chrome.
-  if (pathname.startsWith("/onboarding")) return <>{children}</>;
+  // Onboarding and sign-in are focused full-screen flows with no app chrome.
+  if (pathname.startsWith("/onboarding") || pathname.startsWith("/signin")) return <>{children}</>;
   // Everything else — including the "/" welcome page — shares the one shell
   // (sidebar + framed panel) so the whole app looks and navigates the same.
   return <AppFrame pathname={pathname}>{children}</AppFrame>;

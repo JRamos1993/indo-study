@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { Hono } from "hono";
+import auth from "./auth";
 
 export interface Env {
   /** D1 database "lilt" — the social/account/sync backend. */
@@ -24,6 +25,9 @@ app.get("/api/health", async (c) => {
   }
   return c.json({ ok: true, env: c.env.APP_ENV ?? "dev", db });
 });
+
+// Accounts / auth.
+app.route("/api/auth", auth);
 
 // `run_worker_first` only routes /api/* to the Worker; any other path that
 // reaches here means the static asset was missing — respond defensively.

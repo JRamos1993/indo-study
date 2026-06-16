@@ -72,6 +72,8 @@ export interface LanguageConfig {
   targetPlaceholder: string;
   /** Units organised into named categories (display + ordering). */
   groups: UnitGroup[];
+  /** Units organised by difficulty tier (alternative grouping). */
+  levels: { title: string; unitIds: string[] }[];
   /** Flat list of all units (derived from groups). */
   units: RawLesson[];
   features: LanguageFeatures;
@@ -97,6 +99,21 @@ const jaGroups: UnitGroup[] = [
   { title: "Kanji & characters", icon: "kanji", units: [ja12, ja13] },
 ];
 
+const idLevels = [
+  { title: "Starter", unitIds: [id01.id, id02.id, id03.id, id04.id, id05.id] },
+  { title: "Building", unitIds: [id06.id, id09.id, id10.id, id11.id, id13.id] },
+  {
+    title: "Elementary",
+    unitIds: [id07.id, id08.id, id12.id, id14.id, id15.id, id17.id, id16.id],
+  },
+];
+
+const jaLevels = [
+  { title: "Starter", unitIds: [ja01.id, ja02.id, ja03.id, ja04.id] },
+  { title: "Building", unitIds: [ja05.id, ja06.id, ja07.id, ja08.id, ja13.id] },
+  { title: "Elementary", unitIds: [ja09.id, ja10.id, ja12.id, ja11.id] },
+];
+
 export const LANGUAGES: Record<LangId, LanguageConfig> = {
   id: {
     id: "id",
@@ -109,6 +126,7 @@ export const LANGUAGES: Record<LangId, LanguageConfig> = {
     greeting: "Selamat belajar!",
     targetPlaceholder: "Ketik dalam Bahasa Indonesia…",
     groups: idGroups,
+    levels: idLevels,
     units: flatten(idGroups),
     features: { cloze: true, order: true, wordBuilding: true, kana: false, kanji: false },
   },
@@ -123,6 +141,7 @@ export const LANGUAGES: Record<LangId, LanguageConfig> = {
     greeting: "がんばってください！",
     targetPlaceholder: "Type the rōmaji…",
     groups: jaGroups,
+    levels: jaLevels,
     units: flatten(jaGroups),
     features: { cloze: false, order: false, wordBuilding: false, kana: true, kanji: true },
   },

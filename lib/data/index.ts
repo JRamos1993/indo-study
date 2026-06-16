@@ -140,6 +140,18 @@ export function getLessonGroups(lang: LangId = activeLang()): LessonGroup[] {
   }));
 }
 
+const LEVEL_ICON = ["bolt", "compass", "target"];
+
+/** The active language's units organised by difficulty tier. */
+export function getLevelGroups(lang: LangId = activeLang()): LessonGroup[] {
+  const byId = new Map(lessonsByLang[lang].map((l) => [l.id, l]));
+  return LANGUAGES[lang].levels.map((lvl, i) => ({
+    title: lvl.title,
+    icon: LEVEL_ICON[i] ?? "bolt",
+    lessons: lvl.unitIds.map((id) => byId.get(id)).filter((l): l is Lesson => !!l),
+  }));
+}
+
 /** Look up a lesson by id across every language. */
 export function getLesson(id: string): Lesson | undefined {
   return getAllLessons().find((l) => l.id === id);

@@ -14,7 +14,7 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/" className="text-sm text-slate-500 hover:text-indigo-600">
+        <Link href="/learn" className="text-sm text-slate-500 hover:text-indigo-600">
           ← Back
         </Link>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Settings</h1>

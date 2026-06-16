@@ -85,10 +85,7 @@ export default function PronunciationGuide() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/learn" className="text-sm font-bold" style={{ color: "var(--muted)" }}>
-          ← Back
-        </Link>
-        <h1 className="mt-2 text-2xl">{g.title}</h1>
+        <h1 className="text-2xl">{g.title}</h1>
         <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{g.intro}</p>
       </div>
 

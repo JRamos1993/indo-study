@@ -45,18 +45,7 @@ export default function PracticeHub() {
 
   return (
     <div>
-      <Link
-        href="/learn"
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-extrabold"
-        style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)", boxShadow: "3px 3px 0 0 var(--edge)" }}
-      >
-        <span className="inline-flex" style={{ transform: "rotate(180deg)" }}>
-          <Icon name="arrow" size={15} strokeWidth={2.6} />
-        </span>{" "}
-        Course
-      </Link>
-
-      <header className="mt-5">
+      <header>
         <span className="eyebrow">{getLanguage(lang).name} · drills</span>
         <h1 className="mt-1.5 text-[30px] leading-none">Practice</h1>
         <p className="mt-2 text-[14px] font-bold" style={{ color: "var(--muted)" }}>

@@ -30,7 +30,12 @@ export default function GlossaryPage() {
   const [lesson, setLesson] = useState("");
 
   const nq = normalize(q);
-  const results = all.filter((c) => {
+  // The glossary is your word bank — only words you've actually started learning.
+  const learned = mounted ? all.filter((c) => store[c.item.id] !== undefined) : [];
+  const learnedLessonIds = new Set(learned.map((c) => c.lessonId));
+  const learnedLessons = lessons.filter((l) => learnedLessonIds.has(l.id));
+  const noneLearned = mounted && learned.length === 0;
+  const results = learned.filter((c) => {
     if (lesson && c.lessonId !== lesson) return false;
     if (!nq) return true;
     return (
@@ -40,27 +45,32 @@ export default function GlossaryPage() {
     );
   });
 
-  const strong = mounted ? all.filter((c) => familiarity(store[c.item.id]) === "mastered").length : 0;
+  const strong = learned.filter((c) => familiarity(store[c.item.id]) === "mastered").length;
 
   return (
     <div>
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="mb-6">
-        <Link
-          href="/learn"
-          className="inline-flex items-center gap-1.5 text-[13px] font-extrabold"
-          style={{ color: "var(--muted)" }}
-        >
-          <Icon name="arrow" size={15} strokeWidth={2.4} className="-scale-x-100" />
-          Back
-        </Link>
-        <h1 className="mt-2.5 text-[30px] leading-none">Glossary</h1>
+        <h1 className="text-[30px] leading-none">Glossary</h1>
         <p className="mt-1.5 text-[13px] font-bold" style={{ color: "var(--muted)" }}>
-          <b style={{ color: "var(--ink)" }}>{all.length}</b> words ·{" "}
+          <b style={{ color: "var(--ink)" }}>{learned.length}</b> learned ·{" "}
           <b style={{ color: "var(--lilt-violet)" }}>{strong}</b> strong
         </p>
       </header>
 
+      {noneLearned ? (
+        <div className="rounded-[18px] p-8 text-center" style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--lilt-violet)" }}>
+          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-[14px]" style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}>
+            <Icon name="book" size={26} />
+          </span>
+          <h2 className="text-[19px]">Your word bank is empty</h2>
+          <p className="mx-auto mt-2 max-w-sm text-[14px] font-semibold" style={{ color: "var(--text-body)" }}>
+            Words show up here as you learn them. Start a lesson to fill it.
+          </p>
+          <Link href="/learn" className="btn btn-primary mt-5">Go to your course</Link>
+        </div>
+      ) : (
+      <>
       {/* ── Search ─────────────────────────────────────────────── */}
       <div className="mb-3.5">
         <div className="relative">
@@ -85,7 +95,7 @@ export default function GlossaryPage() {
         <FilterChip active={lesson === ""} onClick={() => setLesson("")}>
           All lessons
         </FilterChip>
-        {lessons.map((l) => (
+        {learnedLessons.map((l) => (
           <FilterChip key={l.id} active={lesson === l.id} onClick={() => setLesson(l.id)}>
             {l.title}
           </FilterChip>
@@ -144,6 +154,8 @@ export default function GlossaryPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

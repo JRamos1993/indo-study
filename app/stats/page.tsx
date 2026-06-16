@@ -292,14 +292,7 @@ function BackupCard() {
 function Header() {
   return (
     <div className="mb-7">
-      <Link
-        href="/learn"
-        className="inline-flex items-center gap-1 text-[13px] font-extrabold"
-        style={{ color: "var(--muted)" }}
-      >
-        ← Back
-      </Link>
-      <h1 className="mt-2 text-[30px] leading-none">Your progress</h1>
+      <h1 className="text-[30px] leading-none">Your progress</h1>
     </div>
   );
 }

@@ -26,17 +26,9 @@ export function LessonBrowser({ lesson }: { lesson: Lesson }) {
 
   return (
     <div>
-      <Link
-        href="/learn"
-        className="inline-flex items-center gap-1.5 text-[13px] font-extrabold"
-        style={{ color: "var(--muted)" }}
-      >
-        <Icon name="arrow" size={15} strokeWidth={2.4} className="-scale-x-100" /> Course
-      </Link>
-
       {/* Unit header / study CTA — sticker card with accent shadow */}
       <div
-        className="mt-3 overflow-hidden rounded-[18px] p-6 sm:p-7"
+        className="overflow-hidden rounded-[18px] p-6 sm:p-7"
         style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-violet)" }}
       >
         <span

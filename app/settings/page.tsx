@@ -15,17 +15,7 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <header className="mb-6">
-        <Link
-          href="/learn"
-          className="inline-flex items-center gap-1.5 text-[13px] font-extrabold"
-          style={{ color: "var(--muted)" }}
-        >
-          <span className="inline-block rotate-180">
-            <Icon name="arrow" size={15} strokeWidth={2.4} />
-          </span>{" "}
-          Back
-        </Link>
-        <h1 className="mt-2 text-[30px] leading-none">Settings</h1>
+        <h1 className="text-[30px] leading-none">Settings</h1>
         <p className="mt-2 text-[13.5px] font-bold" style={{ color: "var(--muted)" }}>
           Tune your learning, appearance, and saved data — all stored on this device.
         </p>

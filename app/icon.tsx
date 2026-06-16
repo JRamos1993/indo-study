@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+// Materialize as a static PNG at build time (required under output: "export").
+export const dynamic = "force-static";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 

@@ -1,7 +1,9 @@
-// Minimal offline-capable service worker for Indo Study.
+// Minimal offline-capable service worker for Lilt.
 // Bump CACHE when shipping changes to drop stale caches.
-const CACHE = "indo-study-v3";
-const SHELL = ["/", "/learn", "/today", "/stats", "/glossary", "/settings"];
+// v4: Cloudflare static-export hosting — trailingSlash:true means shell
+// navigations resolve to directory-style index.html files.
+const CACHE = "lilt-v4";
+const SHELL = ["/", "/today/", "/practice/", "/glossary/", "/stats/", "/settings/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

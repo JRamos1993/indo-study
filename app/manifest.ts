@@ -1,14 +1,17 @@
 import type { MetadataRoute } from "next";
 
+// Materialize as a static file at build time (required under output: "export").
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Lingo Study — learn Indonesian & Japanese",
-    short_name: "Lingo Study",
-    description: "Study and test beginner Indonesian and Japanese offline.",
-    start_url: "/learn",
+    name: "Lilt — learn Indonesian & Japanese",
+    short_name: "Lilt",
+    description: "A practice studio for Indonesian and Japanese — spaced review, a real exercise engine, and your whole word bank, offline.",
+    start_url: "/today/",
     display: "standalone",
-    background_color: "#0f172a",
-    theme_color: "#4f46e5",
+    background_color: "#1A1430",
+    theme_color: "#6C4CF0",
     orientation: "portrait",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

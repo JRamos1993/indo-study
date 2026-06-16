@@ -1,0 +1,36 @@
+{
+  // Single Cloudflare Worker: serves the Next.js static export (./out) as
+  // Workers Static Assets AND handles /api/* via Hono, bound to D1 "lilt".
+  // Docs: assets are served BEFORE the Worker for every path except the
+  // run_worker_first globs, so page loads cost zero Worker invocations.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lilt",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-06-16",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    // Only /api/* wakes the Worker; everything else is a static asset.
+    "run_worker_first": ["/api/*"],
+    // next.config trailingSlash:true emits directory-style index.html files.
+    "html_handling": "force-trailing-slash",
+    // Next emits out/404.html — a multi-page export, NOT an SPA shell.
+    "not_found_handling": "404-page"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lilt",
+      "database_id": "010435be-ef83-4125-9c3f-e18dee633910",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "observability": { "enabled": true },
+
+  // Non-secret vars only. Secrets (SESSION_PEPPER, …) go via `wrangler secret put`.
+  "vars": { "APP_ENV": "production" }
+}

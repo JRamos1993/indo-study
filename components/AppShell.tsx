@@ -27,9 +27,10 @@ const NAV: NavDef[] = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/") return <LandingFrame>{children}</LandingFrame>;
   // Onboarding is a focused full-screen flow with no app chrome.
   if (pathname.startsWith("/onboarding")) return <>{children}</>;
+  // Everything else — including the "/" welcome page — shares the one shell
+  // (sidebar + framed panel) so the whole app looks and navigates the same.
   return <AppFrame pathname={pathname}>{children}</AppFrame>;
 }
 
@@ -116,7 +117,7 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
         className="sticky top-0 z-20 flex items-center justify-between gap-2 px-4 py-2.5 backdrop-blur-xl lg:hidden"
         style={{ borderBottom: "2px solid var(--edge)", background: "color-mix(in srgb, var(--paper) 82%, transparent)" }}
       >
-        <Link href="/today" aria-label="Lilt — Today"><Logo /></Link>
+        <Link href="/" aria-label="Lilt — home"><Logo /></Link>
         <Link
           href="/settings"
           aria-label="Settings"
@@ -135,7 +136,7 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
             className="hidden flex-col gap-1 p-4 lg:flex"
             style={{ background: "var(--surface)", borderRight: "2px solid var(--edge)" }}
           >
-            <Link href="/today" aria-label="Lilt — Today" className="mb-3 px-2 py-1">
+            <Link href="/" aria-label="Lilt — home" className="mb-3 px-2 py-1">
           <Logo />
         </Link>
         <nav className="flex flex-col gap-1">
@@ -230,27 +231,3 @@ function SidebarLink({ n, active, badge }: { n: NavDef; active: boolean; badge: 
   );
 }
 
-// ── Landing frame (public marketing page) ────────────────────────────────────
-
-function LandingFrame({ children }: { children: React.ReactNode }) {
-  const lang = useSettings().studyLanguage;
-  return (
-    <div className="min-h-[100dvh]">
-      <header
-        className="sticky top-0 z-20 backdrop-blur-xl"
-        style={{ borderBottom: "2px solid var(--edge)", background: "color-mix(in srgb, var(--paper) 82%, transparent)" }}
-      >
-        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-5 py-3">
-          <Link href="/" aria-label="Lilt"><Logo /></Link>
-          <div className="flex items-center gap-2.5">
-            <LangSwitcher lang={lang} />
-            <Link href="/today" className="btn btn-primary px-4 py-2 text-sm">
-              Open app
-            </Link>
-          </div>
-        </nav>
-      </header>
-      {children}
-    </div>
-  );
-}

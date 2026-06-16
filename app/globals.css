@@ -4,25 +4,98 @@
 
 :root {
   color-scheme: light dark;
-  --paper: #f3f3ee;
-  --surface: #ffffff;
-  --edge: #14151a;
-  --ink: #14151a;
-  --muted: #6b6f76;
-  --accent: #2f44ff;
-  --accent-ink: #ffffff;
-  --pop: #c7f246;
+
+  /* ===== Core tokens — drive .card/.btn/.chip/.opt/etc. ===== */
+  --paper: #e9e7f1; /* page background (Lilt lavender) */
+  --surface: #ffffff; /* cards, sidebar, list rows */
+  --edge: #1a1430; /* the 2px Pop-Sticker outline + hard shadow = ink */
+  --ink: #1a1430; /* primary text */
+  --muted: #8b84a3; /* secondary / caption text */
+  --accent: #6c4cf0; /* Lilt violet — primary actions, active nav, links */
+  --accent-ink: #ffffff; /* text on violet */
+  --pop: #c9f24d; /* Lilt lime — success / mastered / key stats */
+  --pop-ink: #1a1430; /* text on lime / yellow */
+
+  /* ===== Lilt brand palette ===== */
+  --lilt-ink: #1a1430;
+  --lilt-violet: #6c4cf0;
+  --lilt-lime: #c9f24d;
+  --lilt-yellow: #ffd23f;
+  --lilt-coral: #ff5c77;
+  --on-lime: #3e5417; /* text on lime surfaces */
+  --on-yellow: #6b4f00; /* text on yellow surfaces */
+  --on-coral: #9a2c40; /* text on coral surfaces */
+  --signout: #d13a57;
+
+  /* ===== Surface tints ===== */
+  --panel: #f6f5fb; /* large screen container fill */
+  --panel-alt: #efedf7; /* alt panel fill */
+  --tint-violet: #f4f1ff; /* selected/active row, flashcard front */
+  --tint-violet-2: #f1effa; /* nav hover, language pill */
+  --tint-lilac: #ede8fe; /* spaced-review icon bg */
+  --tint-lime: #eaf7c9; /* correct answer, flashcards icon bg */
+  --tint-yellow: #fff1cc; /* listening icon bg */
+  --tint-coral: #ffe0e6; /* speaking icon bg */
+
+  /* ===== Text / borders / dividers ===== */
+  --text-body: #57506e; /* secondary body copy, option text */
+  --text-faint: #a39cc0; /* low-emphasis */
+  --text-disabled: #c0bad6; /* locked numbers, empty state */
+  --border-soft: #e2dbfb; /* unselected pills/cards */
+  --border-dashed: #c9c2de; /* locked/empty dashed outline */
+  --divider: #f0ecfb; /* 1.5px row dividers */
+  --track: #ece8f8; /* progress-bar track */
+
+  /* ===== Radii ===== */
+  --r-pill: 100px;
+  --r-screen: 26px;
+  --r-card: 18px;
+  --r-card-sm: 16px;
+  --r-input: 14px;
+  --r-control: 13px;
+
+  /* ===== Hard offset shadows (0 blur — the Pop-Sticker signature) ===== */
+  --shadow-card: 4px 4px 0 0 var(--edge);
+  --shadow-sm: 3px 3px 0 0 var(--edge);
+  --shadow-violet: 3px 3px 0 0 var(--lilt-violet);
+  --shadow-lime: 3px 3px 0 0 var(--lilt-lime);
+  --shadow-yellow: 3px 3px 0 0 var(--lilt-yellow);
+  --shadow-coral: 3px 3px 0 0 var(--lilt-coral);
 }
 
 .dark {
-  --paper: #0a0b0d;
-  --surface: #16171c;
-  --edge: #e9e9ec;
-  --ink: #f3f3f5;
-  --muted: #9aa0a8;
-  --accent: #5b6bff;
-  --accent-ink: #0a0b0d;
-  --pop: #c7f246;
+  --paper: #17122a;
+  --surface: #241c3d;
+  --edge: #4a3d6e; /* dark Pop-Sticker outline */
+  --ink: #f2eefb;
+  --muted: #9b93c4;
+  --accent: #7e61f5;
+  --accent-ink: #ffffff;
+  --pop: #c9f24d;
+  --pop-ink: #1a1430;
+
+  --lilt-ink: #0a0712;
+
+  --on-lime: #c9f24d;
+  --on-yellow: #ffd23f;
+  --on-coral: #ff6b84;
+
+  --panel: #1e1733;
+  --panel-alt: #1e1733;
+  --tint-violet: #2c2248;
+  --tint-violet-2: #241c3d;
+  --tint-lilac: #2c2248;
+  --tint-lime: #2c2248;
+  --tint-yellow: #2c2248;
+  --tint-coral: #2c2248;
+
+  --text-body: #c5bce4;
+  --text-faint: #8b84a3;
+  --text-disabled: #6f6790;
+  --border-soft: #3c3160;
+  --border-dashed: #4a3d6e;
+  --divider: #322852;
+  --track: #322852;
 }
 
 html {
@@ -47,8 +120,8 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-display, var(--font-sans)), sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 :where(a, button, [role="button"], input, select, textarea):focus-visible {

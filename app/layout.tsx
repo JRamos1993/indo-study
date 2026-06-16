@@ -1,15 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeManager } from "@/components/ThemeManager";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const display = Space_Grotesk({
+// Plus Jakarta Sans = body/UI; Bricolage Grotesque = display/headings/numbers.
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["500", "600", "700"],
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -20,15 +26,15 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Lingo Study — learn Indonesian & Japanese",
+  title: "Lilt — learn Indonesian & Japanese",
   description:
-    "Study and test beginner Indonesian and Japanese with flashcards, quizzes, kana/kanji drills, and spaced repetition.",
+    "A practice studio for Indonesian and Japanese — spaced review, a real exercise engine, and your whole word bank, offline.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Lingo Study", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Lilt", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f46e5",
+  themeColor: "#6c4cf0",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

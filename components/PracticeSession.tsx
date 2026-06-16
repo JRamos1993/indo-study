@@ -408,7 +408,7 @@ function SessionShell({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="mx-auto w-full max-w-[600px]">
       <div className="mb-5">
         <Link
           href="/learn"

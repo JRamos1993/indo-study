@@ -153,8 +153,16 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
         </div>
           </aside>
 
-          {/* Content */}
-          <main className="px-4 pb-28 pt-6 sm:px-6 lg:p-8 lg:pb-8">{children}</main>
+          {/* Content — the dashboard uses the full column (it has a right
+              rail); every other page is capped + centered for a comfortable,
+              consistent width so nothing sprawls edge-to-edge. */}
+          <main className="w-full px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-8">
+            {pathname === "/today" || pathname === "/today/" ? (
+              children
+            ) : (
+              <div className="mx-auto w-full max-w-[860px]">{children}</div>
+            )}
+          </main>
         </div>
       </div>
 

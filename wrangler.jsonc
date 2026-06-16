@@ -3,6 +3,12 @@
   // Workers Static Assets AND handles /api/* via Hono, bound to D1 "lilt".
   // Docs: assets are served BEFORE the Worker for every path except the
   // run_worker_first globs, so page loads cost zero Worker invocations.
+  // Worker name matches the Workers Builds project ("lilt") and the D1 db.
+  // IMPORTANT: in the Workers Builds project settings set Framework preset =
+  // None, Build command = `npm run build`, Deploy command = `npx wrangler
+  // deploy`. Do NOT let it auto-detect Next.js / use the OpenNext preset — this
+  // app is a STATIC export (./out) served by this Worker, not server-rendered.
+  // (A stale preset build is what injected the bad WORKER_SELF_REFERENCE.)
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lilt",
   "main": "src/worker.ts",

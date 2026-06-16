@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { RegisterSW } from "@/components/RegisterSW";
+import { SyncManager } from "@/components/SyncManager";
 import { ThemeManager } from "@/components/ThemeManager";
 
 // Plus Jakarta Sans = body/UI; Bricolage Grotesque = display/headings/numbers.
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeManager />
         <RegisterSW />
+        <SyncManager />
         <AppShell>{children}</AppShell>
       </body>
     </html>

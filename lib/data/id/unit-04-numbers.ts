@@ -50,11 +50,11 @@ export const lesson: RawLesson = {
       items: [
         { target: "banyak", en: "many / a lot", kind: "vocab" },
         { target: "sedikit", en: "a little / few", kind: "vocab" },
-        { target: "setengah", en: "half", kind: "vocab" },
+        { target: "setengah", en: "half (one half)", kind: "vocab" },
         { target: "semua", en: "all", kind: "vocab" },
         { target: "beberapa", en: "some / several", kind: "vocab" },
         { target: "pertama", en: "first", kind: "vocab" },
-        { target: "kedua", en: "second", kind: "vocab" },
+        { target: "kedua", en: "second / both (of two)", kind: "vocab" },
         { target: "terakhir", en: "last", kind: "vocab" },
       ],
     },

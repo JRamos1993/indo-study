@@ -67,7 +67,7 @@ export const lesson: RawLesson = {
         { target: "Saya mau kopi dan roti.", en: "I want coffee and bread.", kind: "sentence" },
         { target: "Saya lapar karena belum makan.", en: "I'm hungry because I haven't eaten.", kind: "sentence" },
         { target: "Dia sudah pergi.", en: "He / she has already left.", kind: "sentence" },
-        { target: "Kalau hujan, saya di rumah.", en: "If it rains, I stay home.", kind: "sentence" },
+        { target: "Kalau hujan, saya di rumah.", en: "If it rains, I am at home.", kind: "sentence" },
         { target: "Saya masih belajar.", en: "I am still studying.", kind: "sentence" },
       ],
     },

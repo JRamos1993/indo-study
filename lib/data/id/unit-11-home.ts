@@ -34,7 +34,7 @@ export const lesson: RawLesson = {
         { target: "kunci", en: "key", kind: "vocab" },
         { target: "jam", en: "clock / watch", kind: "vocab" },
         { target: "telepon", en: "telephone", kind: "vocab" },
-        { target: "hape", en: "mobile phone", kind: "vocab" },
+        { target: "hape", en: "mobile phone", kind: "vocab", note: "Informal; in formal contexts write HP or telepon genggam." },
         { target: "uang", en: "money", kind: "vocab" },
         { target: "mobil", en: "car", kind: "vocab" },
         { target: "motor", en: "motorbike", kind: "vocab" },

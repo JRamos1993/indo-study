@@ -33,7 +33,7 @@ export const lesson: RawLesson = {
           "en": "hand",
           "kind": "radical",
           "reading": "te",
-          "note": "appears in 手, 拳; side form 扌 in 持, 押"
+          "note": "side form 扌 in 持, 押, 打"
         },
         {
           "target": "扌",
@@ -127,7 +127,7 @@ export const lesson: RawLesson = {
           "en": "mountain",
           "kind": "radical",
           "reading": "yama",
-          "note": "appears in 岩, 出"
+          "note": "appears in 岩, 岸"
         },
         {
           "target": "田",

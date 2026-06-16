@@ -34,7 +34,7 @@ export const lesson: RawLesson = {
         { target: "Siapa itu?", en: "Who is that?", kind: "sentence" },
         { target: "Di mana kamu tinggal?", en: "Where do you live?", kind: "sentence" },
         { target: "Ke mana kamu pergi?", en: "Where are you going?", kind: "sentence" },
-        { target: "Kapan kamu datang?", en: "When did you come?", kind: "sentence" },
+        { target: "Kapan kamu datang?", en: "When are you coming?", kind: "sentence" },
         { target: "Berapa harganya?", en: "How much is it?", kind: "sentence" },
         { target: "Mengapa kamu sedih?", en: "Why are you sad?", kind: "sentence" },
         { target: "Bagaimana kabarmu?", en: "How are you?", kind: "sentence" },

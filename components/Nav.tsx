@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
+import { Icon } from "@/components/Icon";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { dueItemIds, useProgress } from "@/lib/progress";
@@ -19,14 +20,14 @@ export function Nav() {
   const allIds = useMemo(() => getAllItems(lang).map((c) => c.item.id), [lang]);
   const due = mounted ? dueItemIds(store, allIds).length : 0;
 
-  const navLink = (href: string, label: string) => {
+  const tab = (href: string, label: string) => {
     const active = pathname === href;
     return (
       <Link
         href={href}
         className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
           active
-            ? "bg-indigo-600 text-white"
+            ? "bg-indigo-600 text-white shadow-sm"
             : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
         }`}
       >
@@ -36,39 +37,46 @@ export function Nav() {
   };
 
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-      <nav className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link href="/" aria-label="Home" className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-600 text-sm">
-            <span aria-hidden>{langCfg.flag}</span>
+    <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/60">
+      <nav className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <Link href="/" aria-label="Home" className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
+              <Icon name="book" size={17} />
+            </span>
+            <span className="hidden text-[15px] font-bold tracking-tight sm:block">Lingo</span>
           </Link>
-          {/* Language switcher — doubles as the "what am I studying" indicator */}
-          <label className="relative inline-flex items-center">
-            <span className="sr-only">Study language</span>
+
+          {/* Language switcher */}
+          <div className="relative">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm" aria-hidden>
+              {langCfg.flag}
+            </span>
             <select
+              aria-label="Study language"
               value={lang}
               onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
-              className="cursor-pointer rounded-lg border border-slate-300 bg-white py-1 pl-2 pr-6 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+              className="cursor-pointer rounded-full border border-slate-200 bg-white/80 py-1.5 pl-8 pr-7 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               {LANG_IDS.map((id) => {
                 const c = getLanguage(id);
                 return (
                   <option key={id} value={id}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </option>
                 );
               })}
             </select>
-          </label>
+          </div>
         </div>
 
         <div className="flex items-center gap-1">
-          {navLink("/stats", "Stats")}
+          {tab("/stats", "Stats")}
           <Link
             href="/today"
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
               pathname === "/today"
-                ? "bg-indigo-600 text-white"
+                ? "bg-indigo-600 text-white shadow-sm"
                 : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             }`}
           >

@@ -48,7 +48,7 @@ export const lesson: RawLesson = {
       notes: ["jam means both 'hour' and 'o'clock'. 'jam berapa?' = what time?"],
       items: [
         { target: "pagi", en: "morning", kind: "vocab" },
-        { target: "siang", en: "midday / noon", kind: "vocab" },
+        { target: "siang", en: "midday / early afternoon", kind: "vocab" },
         { target: "sore", en: "late afternoon", kind: "vocab" },
         { target: "malam", en: "night / evening", kind: "vocab" },
         { target: "jam", en: "hour / o'clock", kind: "vocab" },

@@ -688,8 +688,8 @@ export const lesson: RawLesson = {
         },
         {
           "target": "ねこ",
-          "en": "A cat.",
-          "kind": "sentence",
+          "en": "cat",
+          "kind": "vocab",
           "reading": "neko",
           "note": "Plain gojūon practice."
         },
@@ -698,7 +698,7 @@ export const lesson: RawLesson = {
           "en": "I am a student.",
           "kind": "sentence",
           "reading": "watashi wa gakusei desu.",
-          "note": "Topic は is read 'wa'; long vowel せい = sē."
+          "note": "Topic は is read 'wa'; がくせい = gakusei (the えい/せい sequence is written 'ei' in Hepburn)."
         },
         {
           "target": "ほんを　よみます。",

@@ -44,6 +44,17 @@ export interface LanguageFeatures {
   kanji: boolean;
 }
 
+/** A named category that groups several units on the dashboard. */
+export interface UnitGroup {
+  title: string;
+  icon: string; // key into components/icons
+  units: RawLesson[];
+}
+
+function flatten(groups: UnitGroup[]): RawLesson[] {
+  return groups.flatMap((g) => g.units);
+}
+
 export interface LanguageConfig {
   id: LangId;
   name: string; // English name, e.g. "Indonesian"
@@ -59,9 +70,32 @@ export interface LanguageConfig {
   greeting: string;
   /** Placeholder when typing the target language. */
   targetPlaceholder: string;
+  /** Units organised into named categories (display + ordering). */
+  groups: UnitGroup[];
+  /** Flat list of all units (derived from groups). */
   units: RawLesson[];
   features: LanguageFeatures;
 }
+
+const idGroups: UnitGroup[] = [
+  { title: "Foundations", icon: "compass", units: [id01, id02, id03, id04, id05] },
+  {
+    title: "People & daily life",
+    icon: "home",
+    units: [id06, id09, id10, id11, id12, id13, id14, id15],
+  },
+  { title: "Grammar & expression", icon: "chat", units: [id07, id08, id17, id16] },
+];
+
+const jaGroups: UnitGroup[] = [
+  { title: "Writing system", icon: "kana", units: [ja01, ja02] },
+  {
+    title: "Everyday vocabulary",
+    icon: "chat",
+    units: [ja03, ja04, ja05, ja06, ja07, ja08, ja09, ja10, ja11],
+  },
+  { title: "Kanji & characters", icon: "kanji", units: [ja12, ja13] },
+];
 
 export const LANGUAGES: Record<LangId, LanguageConfig> = {
   id: {
@@ -74,10 +108,8 @@ export const LANGUAGES: Record<LangId, LanguageConfig> = {
     hasReading: false,
     greeting: "Selamat belajar!",
     targetPlaceholder: "Ketik dalam Bahasa Indonesia…",
-    units: [
-      id01, id02, id03, id04, id05, id06, id07, id08, id09,
-      id10, id11, id12, id13, id14, id15, id16, id17,
-    ],
+    groups: idGroups,
+    units: flatten(idGroups),
     features: { cloze: true, order: true, wordBuilding: true, kana: false, kanji: false },
   },
   ja: {
@@ -90,10 +122,8 @@ export const LANGUAGES: Record<LangId, LanguageConfig> = {
     hasReading: true,
     greeting: "がんばってください！",
     targetPlaceholder: "Type the rōmaji…",
-    units: [
-      ja01, ja02, ja03, ja04, ja05, ja06, ja07,
-      ja08, ja09, ja10, ja11, ja12, ja13,
-    ],
+    groups: jaGroups,
+    units: flatten(jaGroups),
     features: { cloze: false, order: false, wordBuilding: false, kana: true, kanji: true },
   },
 };

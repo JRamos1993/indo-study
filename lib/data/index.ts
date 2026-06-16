@@ -124,6 +124,22 @@ export function getAllLessons(): Lesson[] {
   return LANG_IDS.flatMap((l) => lessonsByLang[l]);
 }
 
+export interface LessonGroup {
+  title: string;
+  icon: string;
+  lessons: Lesson[];
+}
+
+/** The active language's units organised into named category groups. */
+export function getLessonGroups(lang: LangId = activeLang()): LessonGroup[] {
+  const byId = new Map(lessonsByLang[lang].map((l) => [l.id, l]));
+  return LANGUAGES[lang].groups.map((g) => ({
+    title: g.title,
+    icon: g.icon,
+    lessons: g.units.map((u) => byId.get(u.id)).filter((l): l is Lesson => !!l),
+  }));
+}
+
 /** Look up a lesson by id across every language. */
 export function getLesson(id: string): Lesson | undefined {
   return getAllLessons().find((l) => l.id === id);

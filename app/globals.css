@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-/* Class-based dark mode so the Settings toggle can force light/dark
-   (a `.dark` class on <html> is managed by lib/settings applyTheme). */
+/* Class-based dark mode so the Settings toggle can force light/dark. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -10,17 +9,88 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  @apply text-slate-900 antialiased dark:text-slate-100;
+  font-family:
+    var(--font-sans, ui-sans-serif), "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Yu Gothic", Meiryo, "Noto Sans JP", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  min-height: 100dvh;
+  background-color: #f6f7fb;
+  background-image: radial-gradient(
+    900px 480px at 50% -8%,
+    rgba(99, 102, 241, 0.1),
+    transparent 62%
+  );
+  background-attachment: fixed;
 }
 
-@layer utilities {
+.dark body {
+  background-color: #060911;
+  background-image: radial-gradient(
+    900px 480px at 50% -8%,
+    rgba(99, 102, 241, 0.16),
+    transparent 60%
+  );
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.018em;
+}
+
+/* Keyboard focus only — never on mouse click. */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-indigo-500, #6366f1);
+  border-radius: 0.75rem;
+}
+
+@layer components {
   .card {
-    @apply rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur
-      dark:border-slate-800 dark:bg-slate-900/70;
+    @apply rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur
+      dark:border-slate-800/80 dark:bg-slate-900/60;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 10px 30px -18px rgba(15, 23, 42, 0.18);
+  }
+
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5;
+  }
+  .card-hover:hover {
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 16px 40px -20px rgba(79, 70, 229, 0.28);
+  }
+
+  /* Use as `btn btn-primary` etc. in markup. */
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5
+      text-sm font-semibold transition duration-150 active:scale-[0.98]
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-500;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), 0 8px 20px -10px rgba(79, 70, 229, 0.6);
+  }
+  .btn-secondary {
+    @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50
+      dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+  }
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .section-label {
+    @apply mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500;
   }
 }

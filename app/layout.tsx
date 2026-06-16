@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeManager } from "@/components/ThemeManager";
 
@@ -24,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>

@@ -18,7 +18,7 @@ export const lesson: RawLesson = {
         { target: "rendah", en: "low", kind: "vocab" },
         { target: "baru", en: "new", kind: "vocab" },
         { target: "lama", en: "old (of things) / a long time", kind: "vocab" },
-        { target: "tua", en: "old (of people)", kind: "vocab" },
+        { target: "tua", en: "old (of living things)", kind: "vocab" },
         { target: "muda", en: "young", kind: "vocab" },
         { target: "mahal", en: "expensive", kind: "vocab" },
         { target: "murah", en: "cheap", kind: "vocab" },

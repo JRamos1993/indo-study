@@ -106,14 +106,14 @@ export const lesson: RawLesson = {
           "en": "yen; circle, round",
           "kind": "kanji",
           "reading": "en",
-          "note": "on: en; kun: maru(i); example: 百円 (hyaku en) 100 yen"
+          "note": "on: en; kun: maru(i); example: 百円 (hyakuen) 100 yen"
         },
         {
           "target": "私は二十さいです。",
           "en": "I am twenty years old.",
           "kind": "sentence",
-          "reading": "watashi wa hatachi desu.",
-          "note": "二十さい (hatachi) is an irregular reading meaning 'twenty years old'; は is the topic particle read 'wa'"
+          "reading": "watashi wa nijussai desu.",
+          "note": "二十さい (nijussai) means 'twenty years old'; は is the topic particle read 'wa'. The kanji form 二十歳 has the special reading はたち (hatachi)."
         }
       ]
     },

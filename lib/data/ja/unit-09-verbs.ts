@@ -98,7 +98,7 @@ export const lesson: RawLesson = {
           "en": "to return; to go home",
           "kind": "vocab",
           "reading": "kaeru",
-          "note": "Looks like a ru-verb but is an U-verb. Polite: 帰ります (kaerimasu)."
+          "note": "Looks like a ru-verb but is a u-verb. Polite: 帰ります (kaerimasu)."
         },
         {
           "target": "する",

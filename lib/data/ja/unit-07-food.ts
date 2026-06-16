@@ -205,7 +205,7 @@ export const lesson: RawLesson = {
         },
         {
           "target": "辛い",
-          "en": "spicy; salty",
+          "en": "spicy; hot",
           "kind": "vocab",
           "reading": "karai",
           "note": "I-adjective. Same kanji read つらい (tsurai) means 'painful'."

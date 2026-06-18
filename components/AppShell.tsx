@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
@@ -92,66 +93,70 @@ function Logo({ withWordmark = true }: { withWordmark?: boolean }) {
 
 // ── Language switcher (sidebar pill) ─────────────────────────────────────────
 
+const LANG_OPTIONS = LANG_IDS.map((id) => ({
+  value: id,
+  label: (
+    <span className="flex items-center gap-2">
+      <span aria-hidden>{getLanguage(id).flag}</span> {getLanguage(id).name}
+    </span>
+  ),
+}));
+
 function LangSwitcher({ lang }: { lang: LangId }) {
-  const cfg = getLanguage(lang);
   return (
-    <div
-      className="relative flex items-center gap-2.5 rounded-[13px] p-2.5"
-      style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
-    >
-      <span
-        className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[7px] text-[15px]"
-        style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}
-        aria-hidden
-      >
-        {cfg.flag}
-      </span>
-      <span className="min-w-0 leading-tight">
-        <span className="block truncate text-[13.5px] font-extrabold" style={{ color: "var(--ink)" }}>
-          {cfg.name}
-        </span>
-        <span className="block text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
-          {cfg.nativeName}
-        </span>
-      </span>
-      <span className="ml-auto text-xs" style={{ color: "var(--muted)" }} aria-hidden>▾</span>
-      <select
-        aria-label="Study language"
-        value={lang}
-        onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
-        className="absolute inset-0 cursor-pointer opacity-0"
-      >
-        {LANG_IDS.map((id) => (
-          <option key={id} value={id}>
-            {getLanguage(id).name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Dropdown
+      ariaLabel="Study language"
+      value={lang}
+      align="left"
+      menuWidth={200}
+      options={LANG_OPTIONS}
+      onChange={(v) => updateSettings({ studyLanguage: v as LangId })}
+      trigger={(_, open) => {
+        const cfg = getLanguage(lang);
+        return (
+          <div
+            className="flex items-center gap-2.5 rounded-[13px] p-2.5"
+            style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
+          >
+            <span
+              className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[7px] text-[15px]"
+              style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}
+              aria-hidden
+            >
+              {cfg.flag}
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-[13.5px] font-extrabold" style={{ color: "var(--ink)" }}>{cfg.name}</span>
+              <span className="block text-[11px] font-semibold" style={{ color: "var(--muted)" }}>{cfg.nativeName}</span>
+            </span>
+            <span className="ml-auto text-xs" style={{ color: "var(--muted)", transform: open ? "rotate(180deg)" : "none" }} aria-hidden>▾</span>
+          </div>
+        );
+      }}
+    />
   );
 }
 
 // Compact flag-only language switcher for the mobile top bar.
 function LangPill({ lang }: { lang: LangId }) {
   return (
-    <div
-      className="relative grid h-9 w-9 place-items-center rounded-full text-[16px]"
-      style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
-    >
-      <span aria-hidden>{getLanguage(lang).flag}</span>
-      <select
-        aria-label="Study language"
-        value={lang}
-        onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
-        className="absolute inset-0 cursor-pointer opacity-0"
-      >
-        {LANG_IDS.map((id) => (
-          <option key={id} value={id}>
-            {getLanguage(id).name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Dropdown
+      ariaLabel="Study language"
+      value={lang}
+      align="right"
+      menuWidth={180}
+      options={LANG_OPTIONS}
+      onChange={(v) => updateSettings({ studyLanguage: v as LangId })}
+      trigger={() => (
+        <span
+          className="grid h-9 w-9 place-items-center rounded-full text-[16px]"
+          style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
+          aria-hidden
+        >
+          {getLanguage(lang).flag}
+        </span>
+      )}
+    />
   );
 }
 

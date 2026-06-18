@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
@@ -33,19 +33,12 @@ export default function SettingsPage() {
           {/* ── Learning ─────────────────────────────────────────────── */}
           <Section title="Learning" icon="target" shadow="var(--lilt-violet)" tint="var(--tint-lilac)">
             <Row label="Study language" hint="Which language you're learning" last={false}>
-              <Select
+              <Dropdown
+                ariaLabel="Study language"
                 value={s.studyLanguage}
-                onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
-              >
-                {LANG_IDS.map((id) => {
-                  const c = getLanguage(id);
-                  return (
-                    <option key={id} value={id}>
-                      {c.flag} {c.name}
-                    </option>
-                  );
-                })}
-              </Select>
+                options={LANG_IDS.map((id) => ({ value: id, label: `${getLanguage(id).flag} ${getLanguage(id).name}` }))}
+                onChange={(v) => updateSettings({ studyLanguage: v as LangId })}
+              />
             </Row>
 
             <Row label="Daily goal" hint="Reviews per day for the streak ring" last={false}>
@@ -69,41 +62,44 @@ export default function SettingsPage() {
             </Row>
 
             <Row label="Target retention" hint="Higher = more reviews, stronger recall" last={false}>
-              <Select
+              <Dropdown
+                ariaLabel="Target retention"
                 value={String(s.targetRetention)}
-                onChange={(e) => updateSettings({ targetRetention: Number(e.target.value) })}
-              >
-                {[0.8, 0.85, 0.9, 0.95].map((v) => (
-                  <option key={v} value={v}>
-                    {Math.round(v * 100)}%
-                  </option>
-                ))}
-              </Select>
+                options={[0.8, 0.85, 0.9, 0.95].map((v) => ({ value: String(v), label: `${Math.round(v * 100)}%` }))}
+                onChange={(v) => updateSettings({ targetRetention: Number(v) })}
+                menuWidth={120}
+              />
             </Row>
 
             <Row label="Default direction" hint="Which way new cards are quizzed" last>
-              <Select
+              <Dropdown
+                ariaLabel="Default direction"
                 value={s.defaultDirection}
-                onChange={(e) => updateSettings({ defaultDirection: e.target.value as DirectionPref })}
-              >
-                <option value="auto">Auto (mixed)</option>
-                <option value="id2en">{getLanguage(s.studyLanguage).name} → English</option>
-                <option value="en2id">English → {getLanguage(s.studyLanguage).name}</option>
-              </Select>
+                options={[
+                  { value: "auto", label: "Auto (mixed)" },
+                  { value: "id2en", label: `${getLanguage(s.studyLanguage).name} → English` },
+                  { value: "en2id", label: `English → ${getLanguage(s.studyLanguage).name}` },
+                ]}
+                onChange={(v) => updateSettings({ defaultDirection: v as DirectionPref })}
+                menuWidth={210}
+              />
             </Row>
           </Section>
 
           {/* ── Appearance ───────────────────────────────────────────── */}
           <Section title="Appearance" icon="sun" shadow="var(--lilt-yellow)" tint="var(--tint-yellow)">
             <Row label="Theme" hint="Light, dark, or follow your system" last>
-              <Select
+              <Dropdown
+                ariaLabel="Theme"
                 value={s.theme}
-                onChange={(e) => updateSettings({ theme: e.target.value as ThemePref })}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </Select>
+                options={[
+                  { value: "system", label: "System" },
+                  { value: "light", label: "Light" },
+                  { value: "dark", label: "Dark" },
+                ]}
+                onChange={(v) => updateSettings({ theme: v as ThemePref })}
+                menuWidth={130}
+              />
             </Row>
           </Section>
 
@@ -216,27 +212,6 @@ function Row({
 }
 
 // ── Controls ───────────────────────────────────────────────────────────────────
-
-function Select({
-  value,
-  onChange,
-  children,
-}: {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={onChange}
-      className="shrink-0 rounded-full px-4 py-2 text-[13.5px] font-extrabold outline-none"
-      style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)" }}
-    >
-      {children}
-    </select>
-  );
-}
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (

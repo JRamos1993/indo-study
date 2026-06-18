@@ -1,6 +1,7 @@
 "use client";
 
 import { exportProgress, replaceProgress } from "@/lib/progress";
+import { type Settings, applyRemoteSettings, getSettings, getSettingsUpdatedAt } from "@/lib/settings";
 import { type StatsData, exportStats, replaceStats } from "@/lib/stats";
 import type { CardState } from "@/lib/srs";
 
@@ -26,10 +27,23 @@ export async function syncNow(): Promise<"ok" | "skip" | "fail"> {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ progress: exportProgress(), stats: exportStats() }),
+      body: JSON.stringify({
+        progress: exportProgress(),
+        stats: exportStats(),
+        settings: getSettings(),
+        settingsUpdatedAt: getSettingsUpdatedAt(),
+      }),
     });
     if (!res.ok) return "fail";
-    const data = (await res.json()) as { progress?: Record<string, CardState>; stats?: StatsData };
+    const data = (await res.json()) as {
+      progress?: Record<string, CardState>;
+      stats?: StatsData;
+      settings?: Partial<Settings>;
+      settingsUpdatedAt?: number;
+    };
+    if (data.settings && typeof data.settingsUpdatedAt === "number") {
+      applyRemoteSettings(data.settings, data.settingsUpdatedAt);
+    }
 
     const cur = exportProgress();
     const mergedProgress: Record<string, CardState> = { ...(data.progress ?? {}) };

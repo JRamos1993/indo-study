@@ -21,7 +21,12 @@ sync.post("/", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.json({ error: "unauthorized" }, 401);
 
-  let body: { progress?: Record<string, CardState>; stats?: { reviewsByDay?: Record<string, number>; newByDay?: Record<string, number> } };
+  let body: {
+    progress?: Record<string, CardState>;
+    stats?: { reviewsByDay?: Record<string, number>; newByDay?: Record<string, number> };
+    settings?: Record<string, any>;
+    settingsUpdatedAt?: number;
+  };
   try {
     body = await c.req.json();
   } catch {
@@ -67,6 +72,32 @@ sync.post("/", async (c) => {
   }
   if (statStmts.length) await c.env.DB.batch(statStmts);
 
+  // ── settings: last-write-wins by the client's timestamp ──
+  const clientTs = typeof body.settingsUpdatedAt === "number" ? body.settingsUpdatedAt : 0;
+  const cs = body.settings;
+  const sRow0 = await c.env.DB.prepare("SELECT updated_at FROM user_settings WHERE user_id = ?")
+    .bind(user.id)
+    .first<{ updated_at: number }>();
+  if (cs && clientTs > (sRow0?.updated_at ?? 0)) {
+    await c.env.DB.prepare(
+      "INSERT INTO user_settings (user_id, study_language, daily_goal, daily_goal_minutes, new_per_day, target_retention, default_direction, theme, learning_focus, share_activity, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET study_language=excluded.study_language, daily_goal=excluded.daily_goal, daily_goal_minutes=excluded.daily_goal_minutes, new_per_day=excluded.new_per_day, target_retention=excluded.target_retention, default_direction=excluded.default_direction, theme=excluded.theme, learning_focus=excluded.learning_focus, share_activity=excluded.share_activity, updated_at=excluded.updated_at",
+    )
+      .bind(
+        user.id,
+        cs.studyLanguage ?? "id",
+        Math.round(cs.dailyGoal ?? 20),
+        Math.round(cs.dailyGoalMinutes ?? 10),
+        Math.round(cs.newPerDay ?? 15),
+        cs.targetRetention ?? 0.9,
+        cs.defaultDirection ?? "auto",
+        cs.theme ?? "light",
+        cs.learningFocus ?? "balanced",
+        cs.shareActivity === false ? 0 : 1,
+        clientTs,
+      )
+      .run();
+  }
+
   // Project today's totals into any circles this user shares activity with.
   await projectCircleActivity(c.env, user.id, now);
 
@@ -98,7 +129,29 @@ sync.post("/", async (c) => {
     if (r.new_count) outNew[r.day] = r.new_count;
   }
 
-  return c.json({ progress: mergedProgress, stats: { reviewsByDay: outReviews, newByDay: outNew } });
+  const finalS = await c.env.DB.prepare("SELECT * FROM user_settings WHERE user_id = ?")
+    .bind(user.id)
+    .first<any>();
+  const settings = finalS
+    ? {
+        studyLanguage: finalS.study_language,
+        dailyGoal: finalS.daily_goal,
+        dailyGoalMinutes: finalS.daily_goal_minutes,
+        newPerDay: finalS.new_per_day,
+        targetRetention: finalS.target_retention,
+        defaultDirection: finalS.default_direction,
+        theme: finalS.theme,
+        learningFocus: finalS.learning_focus,
+        shareActivity: finalS.share_activity === 1,
+      }
+    : null;
+
+  return c.json({
+    progress: mergedProgress,
+    stats: { reviewsByDay: outReviews, newByDay: outNew },
+    settings,
+    settingsUpdatedAt: finalS?.updated_at ?? 0,
+  });
 });
 
 // Mirror today's aggregate review count into the user's circles (privacy: only

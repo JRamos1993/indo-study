@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { logout, useAuth } from "@/lib/auth";
+import { changePassword, deleteAccount, logout, useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, getLanguage } from "@/lib/languages";
 import { masteryPercent, summarize, useProgress } from "@/lib/progress";
@@ -192,6 +193,8 @@ export default function ProfilePage() {
         )}
       </div>
 
+      {auth.user && <ManageAccount />}
+
       {/* Preferences + data */}
       <h2 className="section-label mt-8">Settings</h2>
       <div className="overflow-hidden rounded-[18px]" style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}>
@@ -200,6 +203,108 @@ export default function ProfilePage() {
         <Row href="/stats" icon="bars" label="Progress & stats" desc="Streak, forecast, mastery" border />
       </div>
     </div>
+  );
+}
+
+function ManageAccount() {
+  const router = useRouter();
+  const [open, setOpen] = useState<"pw" | "del" | null>(null);
+  const [cur, setCur] = useState("");
+  const [nw, setNw] = useState("");
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [delPw, setDelPw] = useState("");
+  const [delErr, setDelErr] = useState<string | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+
+  const field = "w-full rounded-[12px] border-2 border-[color:var(--edge)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] font-semibold outline-none";
+
+  const doChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwBusy(true);
+    setPwMsg(null);
+    const r = await changePassword(cur, nw);
+    setPwBusy(false);
+    if (r.ok) {
+      setPwMsg({ ok: true, text: "Password changed." });
+      setCur("");
+      setNw("");
+    } else {
+      setPwMsg({
+        ok: false,
+        text:
+          r.error === "invalid_credentials"
+            ? "Current password is wrong."
+            : r.error === "weak_password"
+              ? "Use at least 8 characters."
+              : "Couldn't change password.",
+      });
+    }
+  };
+
+  const doDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDelBusy(true);
+    setDelErr(null);
+    const r = await deleteAccount(delPw);
+    setDelBusy(false);
+    if (r.ok) router.push("/");
+    else setDelErr(r.error === "invalid_credentials" ? "Password is wrong." : "Couldn't delete account.");
+  };
+
+  return (
+    <>
+      <h2 className="section-label mt-8">Manage account</h2>
+      <div className="overflow-hidden rounded-[18px]" style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}>
+        <button onClick={() => setOpen((o) => (o === "pw" ? null : "pw"))} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px]" style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}>
+            <Icon name="gear" size={19} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-[15px] font-extrabold">Change password</span>
+            <span className="block text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>Update your password</span>
+          </span>
+          <span style={{ transform: open === "pw" ? "rotate(90deg)" : "none", color: "var(--muted)" }}>
+            <Icon name="arrow" size={17} strokeWidth={2.2} />
+          </span>
+        </button>
+        {open === "pw" && (
+          <form onSubmit={doChange} className="flex flex-col gap-2.5 px-4 pb-4" style={{ borderTop: "1.5px solid var(--divider)" }}>
+            <input className={`${field} mt-3`} type="password" placeholder="Current password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
+            <input className={field} type="password" placeholder="New password (8+ chars)" autoComplete="new-password" value={nw} onChange={(e) => setNw(e.target.value)} required />
+            {pwMsg && (
+              <p className="text-[13px] font-bold" style={{ color: pwMsg.ok ? "var(--on-lime)" : "var(--on-coral)" }}>{pwMsg.text}</p>
+            )}
+            <button type="submit" disabled={pwBusy} className="btn btn-primary self-start">{pwBusy ? "…" : "Update password"}</button>
+          </form>
+        )}
+
+        <button onClick={() => setOpen((o) => (o === "del" ? null : "del"))} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left" style={{ borderTop: "1.5px solid var(--divider)" }}>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px]" style={{ background: "var(--tint-coral)", border: "2px solid var(--edge)" }}>
+            <Icon name="flame" size={19} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-[15px] font-extrabold" style={{ color: "var(--signout)" }}>Delete account</span>
+            <span className="block text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>Permanently remove your account and data</span>
+          </span>
+          <span style={{ transform: open === "del" ? "rotate(90deg)" : "none", color: "var(--muted)" }}>
+            <Icon name="arrow" size={17} strokeWidth={2.2} />
+          </span>
+        </button>
+        {open === "del" && (
+          <form onSubmit={doDelete} className="flex flex-col gap-2.5 px-4 pb-4" style={{ borderTop: "1.5px solid var(--divider)" }}>
+            <p className="mt-3 text-[13px] font-bold" style={{ color: "var(--text-body)" }}>
+              This permanently deletes your account, synced progress and Circle membership. It can&apos;t be undone.
+            </p>
+            <input className={field} type="password" placeholder="Confirm your password" autoComplete="current-password" value={delPw} onChange={(e) => setDelPw(e.target.value)} required />
+            {delErr && <p className="text-[13px] font-bold" style={{ color: "var(--on-coral)" }}>{delErr}</p>}
+            <button type="submit" disabled={delBusy} className="self-start rounded-full px-5 py-2.5 text-[13px] font-extrabold transition active:translate-y-0.5" style={{ background: "var(--signout)", color: "#fff", border: "2px solid var(--edge)" }}>
+              {delBusy ? "…" : "Delete my account forever"}
+            </button>
+          </form>
+        )}
+      </div>
+    </>
   );
 }
 

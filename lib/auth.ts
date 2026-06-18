@@ -82,17 +82,50 @@ export async function refreshAuth(): Promise<void> {
   set({ status: "ready" });
 }
 
-export async function signup(email: string, password: string, name: string): Promise<{ ok: boolean; error?: string }> {
+export async function signup(
+  email: string,
+  password: string,
+  name: string,
+): Promise<{ ok: boolean; error?: string; recoveryKey?: string }> {
   const { ok, data } = await api("/signup", { method: "POST", body: JSON.stringify({ email, password, name }) });
   if (ok && data?.user) {
     setUser(data.user);
+    set({ status: "ready" });
+    return { ok: true, recoveryKey: data.recoveryKey };
+  }
+  return { ok: false, error: data?.error ?? "network" };
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  const { ok, data } = await api("/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) });
+  return ok ? { ok: true } : { ok: false, error: data?.error ?? "network" };
+}
+
+export async function deleteAccount(password: string): Promise<{ ok: boolean; error?: string }> {
+  const { ok, data } = await api("/account", { method: "DELETE", body: JSON.stringify({ password }) });
+  if (ok) {
+    setUser(null);
     set({ status: "ready" });
     return { ok: true };
   }
   return { ok: false, error: data?.error ?? "network" };
 }
 
-export async function login(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+export async function recover(
+  email: string,
+  recoveryKey: string,
+  newPassword: string,
+): Promise<{ ok: boolean; error?: string; recoveryKey?: string }> {
+  const { ok, data } = await api("/recover", { method: "POST", body: JSON.stringify({ email, recoveryKey, newPassword }) });
+  if (ok && data?.user) {
+    setUser(data.user);
+    set({ status: "ready" });
+    return { ok: true, recoveryKey: data.recoveryKey };
+  }
+  return { ok: false, error: data?.error ?? "network" };
+}
+
+export async function login(email: string, password: string): Promise<{ ok: boolean; error?: string; recoveryKey?: string }> {
   const { ok, data } = await api("/login", { method: "POST", body: JSON.stringify({ email, password }) });
   if (ok && data?.user) {
     setUser(data.user);

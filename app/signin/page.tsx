@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
-import { login, signup } from "@/lib/auth";
+import { login, recover, signup } from "@/lib/auth";
+
+type Mode = "signup" | "login" | "recover";
 
 const ERRORS: Record<string, string> = {
   invalid_credentials: "That email and password don't match.",
@@ -12,9 +14,10 @@ const ERRORS: Record<string, string> = {
   invalid_email: "Please enter a valid email address.",
   weak_password: "Use at least 8 characters.",
   missing_name: "Please tell us your name.",
+  invalid_recovery: "That email and recovery key don't match.",
   rate_limited: "Too many attempts — try again in a minute.",
   bad_origin: "Request blocked. Please reload and try again.",
-  network: "Can't reach the server. Your progress still works offline.",
+  network: "Can't reach the server. Please check your connection.",
 };
 
 function Logo() {
@@ -35,22 +38,92 @@ function Logo() {
 
 export default function SignInPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // After signup/recover we show the recovery key before moving on.
+  const [recovery, setRecovery] = useState<{ value: string; next: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = mode === "signup" ? await signup(email, password, name) : await login(email, password);
+    const res =
+      mode === "signup"
+        ? await signup(email, password, name)
+        : mode === "recover"
+          ? await recover(email, key, password)
+          : await login(email, password);
     setBusy(false);
-    if (res.ok) router.push("/today");
-    else setError(ERRORS[res.error ?? "network"] ?? "Something went wrong.");
+    if (!res.ok) {
+      setError(ERRORS[res.error ?? "network"] ?? "Something went wrong.");
+      return;
+    }
+    if (mode === "login") {
+      router.push("/today");
+    } else {
+      // signup → onboarding; recover → straight back in.
+      setRecovery({ value: res.recoveryKey ?? "", next: mode === "signup" ? "/onboarding" : "/today" });
+    }
   };
+
+  // ── recovery-key reveal ──
+  if (recovery) {
+    return (
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col justify-center px-5 py-8">
+        <div className="mb-6"><Logo /></div>
+        <div
+          className="rounded-[22px] p-6 sm:p-7"
+          style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-lime)" }}
+        >
+          <h1 className="text-[22px] leading-tight">Save your recovery key</h1>
+          <p className="mt-1.5 text-[13.5px] font-bold" style={{ color: "var(--muted)" }}>
+            This is the only way to reset your password if you forget it. Store it somewhere safe —
+            we can&apos;t show it again.
+          </p>
+          <div
+            className="mt-4 flex items-center justify-between gap-3 rounded-[14px] px-4 py-3"
+            style={{ background: "var(--tint-lime)", border: "2px solid var(--edge)" }}
+          >
+            <code className="font-display text-[16px] font-extrabold tracking-[0.08em]" style={{ color: "var(--lilt-ink)" }}>
+              {recovery.value}
+            </code>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(recovery.value).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                });
+              }}
+              className="shrink-0 rounded-full px-3 py-1.5 text-[12px] font-extrabold"
+              style={{ background: "var(--lilt-ink)", color: "#fff", border: "2px solid var(--edge)" }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+          <button
+            onClick={() => router.push(recovery.next)}
+            className="btn btn-primary mt-5 w-full"
+          >
+            I&apos;ve saved it — continue
+            <Icon name="arrow" size={16} strokeWidth={2.4} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const titles: Record<Mode, { h: string; p: string; cta: string }> = {
+    signup: { h: "Create your account", p: "Sync your streak and mastery across devices, and join a Circle.", cta: "Create account" },
+    login: { h: "Welcome back", p: "Sign in to pick up where you left off.", cta: "Sign in" },
+    recover: { h: "Reset your password", p: "Enter your email and the recovery key you saved at sign-up.", cta: "Reset password" },
+  };
+  const t = titles[mode];
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col justify-center px-5 py-8">
@@ -65,27 +138,24 @@ export default function SignInPage() {
         className="rounded-[22px] p-6 sm:p-7"
         style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-violet)" }}
       >
-        <h1 className="text-[24px] leading-tight">
-          {mode === "signup" ? "Create your account" : "Welcome back"}
-        </h1>
-        <p className="mt-1.5 text-[13.5px] font-bold" style={{ color: "var(--muted)" }}>
-          {mode === "signup"
-            ? "Sync your streak and mastery across devices, and join a Circle."
-            : "Sign in to pick up where you left off."}
-        </p>
+        <h1 className="text-[24px] leading-tight">{t.h}</h1>
+        <p className="mt-1.5 text-[13.5px] font-bold" style={{ color: "var(--muted)" }}>{t.p}</p>
 
         <form onSubmit={submit} className="mt-5 flex flex-col gap-3">
           {mode === "signup" && (
             <Field label="Name" value={name} onChange={setName} type="text" placeholder="Maya" autoComplete="name" />
           )}
           <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="you@example.com" autoComplete="email" />
+          {mode === "recover" && (
+            <Field label="Recovery key" value={key} onChange={setKey} type="text" placeholder="ABCD-EF2H-…" autoComplete="off" />
+          )}
           <Field
-            label="Password"
+            label={mode === "recover" ? "New password" : "Password"}
             value={password}
             onChange={setPassword}
             type="password"
             placeholder="At least 8 characters"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
           />
 
           {error && (
@@ -97,30 +167,33 @@ export default function SignInPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="mt-1 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-display text-[15px] font-extrabold transition active:translate-y-0.5 disabled:opacity-50"
-            style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "2px solid var(--edge)", boxShadow: "3px 3px 0 0 var(--edge)" }}
-          >
-            {busy ? "…" : mode === "signup" ? "Create account" : "Sign in"}
+          <button type="submit" disabled={busy} className="btn btn-primary mt-1 w-full">
+            {busy ? "…" : t.cta}
             {!busy && <Icon name="arrow" size={16} strokeWidth={2.4} />}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-[13px] font-bold" style={{ color: "var(--muted)" }}>
-          {mode === "signup" ? "Already have an account?" : "New to Lilt?"}{" "}
-          <button
-            onClick={() => {
-              setMode(mode === "signup" ? "login" : "signup");
-              setError(null);
-            }}
-            className="font-extrabold"
-            style={{ color: "var(--accent)" }}
-          >
-            {mode === "signup" ? "Sign in" : "Create one"}
-          </button>
-        </p>
+        <div className="mt-4 flex flex-col items-center gap-1.5 text-center text-[13px] font-bold" style={{ color: "var(--muted)" }}>
+          {mode === "signup" ? (
+            <button onClick={() => { setMode("login"); setError(null); }} style={{ color: "var(--muted)" }}>
+              Already have an account? <span className="font-extrabold" style={{ color: "var(--accent)" }}>Sign in</span>
+            </button>
+          ) : (
+            <button onClick={() => { setMode("signup"); setError(null); }} style={{ color: "var(--muted)" }}>
+              New to Lilt? <span className="font-extrabold" style={{ color: "var(--accent)" }}>Create one</span>
+            </button>
+          )}
+          {mode === "login" && (
+            <button onClick={() => { setMode("recover"); setError(null); }} className="font-extrabold" style={{ color: "var(--accent)" }}>
+              Forgot your password?
+            </button>
+          )}
+          {mode === "recover" && (
+            <button onClick={() => { setMode("login"); setError(null); }} className="font-extrabold" style={{ color: "var(--accent)" }}>
+              ← Back to sign in
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="mt-4 text-center text-[12px] font-bold" style={{ color: "var(--muted)" }}>

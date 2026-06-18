@@ -144,6 +144,15 @@ function makeHandle(name: string, email: string): string {
   return `${base}_${suffix}`;
 }
 
+// High-entropy, human-copyable recovery key, e.g. ABCD-EF2H-...-WXYZ.
+function makeRecoveryKey(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  const chars = [...bytes].map((b) => alphabet[b % alphabet.length]);
+  return [0, 4, 8, 12, 16].map((i) => chars.slice(i, i + 4).join("")).join("-");
+}
+const normalizeKey = (k: string) => k.trim().toUpperCase().replace(/\s+/g, "");
+
 // ── routes ───────────────────────────────────────────────────────────────────
 const auth = new Hono<{ Bindings: Env }>();
 
@@ -171,18 +180,21 @@ auth.post("/signup", async (c) => {
   const { hash, salt, iter } = await hashPassword(password, c.env.SESSION_PEPPER ?? "");
   const id = crypto.randomUUID();
   const handle = makeHandle(name, norm);
+  const recoveryKey = makeRecoveryKey();
+  const recoveryHash = await sha256Hex(normalizeKey(recoveryKey));
   const now = Date.now();
   await c.env.DB.prepare(
-    "INSERT INTO users (id, email, email_norm, password_hash, password_salt, password_iter, display_name, handle, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+    "INSERT INTO users (id, email, email_norm, password_hash, password_salt, password_iter, display_name, handle, recovery_hash, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
   )
-    .bind(id, email, norm, hash, salt, iter, name, handle, now, now)
+    .bind(id, email, norm, hash, salt, iter, name, handle, recoveryHash, now, now)
     .run();
   await c.env.DB.prepare("INSERT INTO user_settings (user_id, updated_at) VALUES (?,?)").bind(id, now).run();
 
   const token = newToken();
   await createSession(c.env, id, token);
   setSessionCookie(c, token);
-  return c.json({ user: { id, email, name, handle } });
+  // recoveryKey is returned ONCE so the client can show it to the user.
+  return c.json({ user: { id, email, name, handle }, recoveryKey });
 });
 
 auth.post("/login", async (c) => {
@@ -231,6 +243,84 @@ auth.post("/logout", async (c) => {
 
 auth.get("/me", async (c) => {
   return c.json({ user: await currentUser(c) });
+});
+
+// Change password (logged in).
+auth.post("/password", async (c) => {
+  if (!sameOrigin(c)) return c.json({ error: "bad_origin" }, 403);
+  const user = await currentUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const body = (await c.req.json().catch(() => ({}))) as { currentPassword?: string; newPassword?: string };
+  if ((body.newPassword ?? "").length < 8) return c.json({ error: "weak_password" }, 400);
+  const pepper = c.env.SESSION_PEPPER ?? "";
+  const row = await c.env.DB.prepare(
+    "SELECT password_hash, password_salt, password_iter FROM users WHERE id = ?",
+  )
+    .bind(user.id)
+    .first<{ password_hash: string; password_salt: string; password_iter: number }>();
+  if (!row) return c.json({ error: "unauthorized" }, 401);
+  const ok = await verifyPassword(body.currentPassword ?? "", pepper, row.password_salt, row.password_hash, row.password_iter);
+  if (!ok) return c.json({ error: "invalid_credentials" }, 401);
+  const { hash, salt, iter } = await hashPassword(body.newPassword!, pepper);
+  await c.env.DB.prepare(
+    "UPDATE users SET password_hash = ?, password_salt = ?, password_iter = ?, updated_at = ? WHERE id = ?",
+  )
+    .bind(hash, salt, iter, Date.now(), user.id)
+    .run();
+  return c.json({ ok: true });
+});
+
+// Reset password with a recovery key (forgot password — no email needed).
+auth.post("/recover", async (c) => {
+  if (!sameOrigin(c)) return c.json({ error: "bad_origin" }, 403);
+  if (!(await rateLimit(c, "recover", 8, 60_000))) return c.json({ error: "rate_limited" }, 429);
+  const body = (await c.req.json().catch(() => ({}))) as { email?: string; recoveryKey?: string; newPassword?: string };
+  if ((body.newPassword ?? "").length < 8) return c.json({ error: "weak_password" }, 400);
+  const pepper = c.env.SESSION_PEPPER ?? "";
+  const email = (body.email ?? "").trim().toLowerCase();
+  const row = await c.env.DB.prepare(
+    "SELECT id, email, display_name, handle, recovery_hash FROM users WHERE email_norm = ?",
+  )
+    .bind(email)
+    .first<{ id: string; email: string; display_name: string; handle: string | null; recovery_hash: string | null }>();
+  const given = await sha256Hex(normalizeKey(body.recoveryKey ?? ""));
+  if (!row || !row.recovery_hash || given !== row.recovery_hash) {
+    return c.json({ error: "invalid_recovery" }, 401);
+  }
+  const { hash, salt, iter } = await hashPassword(body.newPassword!, pepper);
+  const nextKey = makeRecoveryKey();
+  const nextHash = await sha256Hex(normalizeKey(nextKey));
+  await c.env.DB.prepare(
+    "UPDATE users SET password_hash = ?, password_salt = ?, password_iter = ?, recovery_hash = ?, updated_at = ? WHERE id = ?",
+  )
+    .bind(hash, salt, iter, nextHash, Date.now(), row.id)
+    .run();
+  // Invalidate every existing session, then start a fresh one.
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(row.id).run();
+  const token = newToken();
+  await createSession(c.env, row.id, token);
+  setSessionCookie(c, token);
+  return c.json({ user: { id: row.id, email: row.email, name: row.display_name, handle: row.handle }, recoveryKey: nextKey });
+});
+
+// Delete account (logged in; password-confirmed). Cascades to all user data.
+auth.delete("/account", async (c) => {
+  if (!sameOrigin(c)) return c.json({ error: "bad_origin" }, 403);
+  const user = await currentUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const body = (await c.req.json().catch(() => ({}))) as { password?: string };
+  const pepper = c.env.SESSION_PEPPER ?? "";
+  const row = await c.env.DB.prepare(
+    "SELECT password_hash, password_salt, password_iter FROM users WHERE id = ?",
+  )
+    .bind(user.id)
+    .first<{ password_hash: string; password_salt: string; password_iter: number }>();
+  if (!row) return c.json({ error: "unauthorized" }, 401);
+  const ok = await verifyPassword(body.password ?? "", pepper, row.password_salt, row.password_hash, row.password_iter);
+  if (!ok) return c.json({ error: "invalid_credentials" }, 401);
+  await c.env.DB.prepare("DELETE FROM users WHERE id = ?").bind(user.id).run();
+  deleteCookie(c, COOKIE, { path: "/" });
+  return c.json({ ok: true });
 });
 
 export default auth;

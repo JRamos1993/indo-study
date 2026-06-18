@@ -195,12 +195,10 @@ export default function ProfilePage() {
 
       {auth.user && <ManageAccount />}
 
-      {/* Preferences + data */}
+      {/* Preferences */}
       <h2 className="section-label mt-8">Settings</h2>
       <div className="overflow-hidden rounded-[18px]" style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}>
-        <Row href="/settings" icon="gear" label="Preferences" desc="Goal, theme, retention, direction" />
-        <Row href="/guide/pronunciation" icon="book" label="Pronunciation guide" desc="Sounds, kana charts, examples" border />
-        <Row href="/stats" icon="bars" label="Progress & stats" desc="Streak, forecast, mastery" border />
+        <Row href="/settings" icon="gear" label="Preferences" desc="Goal, theme, retention, direction, privacy" />
       </div>
     </div>
   );

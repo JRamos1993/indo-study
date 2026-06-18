@@ -188,7 +188,8 @@ auth.post("/signup", async (c) => {
   )
     .bind(id, email, norm, hash, salt, iter, name, handle, recoveryHash, now, now)
     .run();
-  await c.env.DB.prepare("INSERT INTO user_settings (user_id, updated_at) VALUES (?,?)").bind(id, now).run();
+  // theme 'light' to match the client default (the design ships light first).
+  await c.env.DB.prepare("INSERT INTO user_settings (user_id, theme, updated_at) VALUES (?, 'light', ?)").bind(id, now).run();
 
   const token = newToken();
   await createSession(c.env, id, token);

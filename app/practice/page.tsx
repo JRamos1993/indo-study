@@ -60,9 +60,17 @@ export default function PracticeHub() {
             <Link
               key={m.href}
               href={m.href}
-              className="flex flex-col rounded-[16px] p-4 transition hover:-translate-x-0.5 hover:-translate-y-0.5"
+              className="relative flex flex-col rounded-[16px] p-4 transition hover:-translate-x-0.5 hover:-translate-y-0.5"
               style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: `3px 3px 0 0 ${a.shadow}` }}
             >
+              {m.badge && (
+                <span
+                  className="absolute right-2.5 top-2.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.04em]"
+                  style={{ background: "var(--accent)", color: "var(--accent-ink)", border: "1.5px solid var(--edge)" }}
+                >
+                  {m.badge}
+                </span>
+              )}
               <span
                 className="mb-3 grid h-10 w-10 place-items-center rounded-[11px]"
                 style={{ background: a.tint, border: "2px solid var(--edge)", color: "var(--ink)" }}
@@ -71,14 +79,6 @@ export default function PracticeHub() {
               </span>
               <div className="font-display text-[16px] font-extrabold leading-tight">{m.label}</div>
               <div className="mt-0.5 text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>{m.desc}</div>
-              {m.badge && (
-                <span
-                  className="mt-2.5 inline-block self-start rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold"
-                  style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
-                >
-                  {m.badge}
-                </span>
-              )}
             </Link>
           );
         })}

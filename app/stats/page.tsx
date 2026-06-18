@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Icon } from "@/components/Icon";
-import { buildBackup, restoreBackup } from "@/lib/backup";
 import { getLessons } from "@/lib/data";
 import { masteryPercent, reviewForecast, summarize, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
@@ -203,88 +202,6 @@ export default function StatsPage() {
         <LegendDot color="var(--lilt-yellow)" label="Learning" />
       </div>
 
-      <BackupCard />
-
-      <div className="mt-6">
-        <Link
-          href="/guide/pronunciation"
-          className="inline-flex items-center gap-1.5 text-[13px] font-extrabold hover:underline"
-          style={{ color: "var(--accent)" }}
-        >
-          Pronunciation guide →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function BackupCard() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const onExport = () => {
-    const blob = new Blob([JSON.stringify(buildBackup(), null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `indo-study-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const onImport = async (file: File) => {
-    const text = await file.text();
-    const res = restoreBackup(text);
-    if (res.ok) {
-      setMsg("Progress restored. Reloading…");
-      setTimeout(() => location.reload(), 600);
-    } else {
-      setMsg(res.error);
-    }
-  };
-
-  return (
-    <div
-      className="mt-6 rounded-[18px] p-5"
-      style={{ background: "var(--panel)", border: "2px solid var(--edge)" }}
-    >
-      <div className="flex items-center gap-3">
-        <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px]"
-          style={{ background: "var(--tint-lilac)", border: "2px solid var(--edge)", color: "var(--ink)" }}
-        >
-          <Icon name="refresh" size={21} strokeWidth={1.9} />
-        </span>
-        <h2 className="text-[18px]">Backup &amp; move devices</h2>
-      </div>
-      <p className="mt-2.5 text-[13px] font-bold leading-relaxed" style={{ color: "var(--text-body)" }}>
-        Progress lives in this browser only. Export a file, then import it on another
-        device to carry your streak and mastery across.
-      </p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button onClick={onExport} className="btn btn-primary">
-          Export progress
-        </button>
-        <button onClick={() => fileRef.current?.click()} className="btn btn-secondary">
-          Import progress
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onImport(f);
-            e.target.value = "";
-          }}
-        />
-      </div>
-      {msg && (
-        <p className="mt-3 text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>{msg}</p>
-      )}
     </div>
   );
 }

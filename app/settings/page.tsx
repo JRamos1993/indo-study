@@ -1,5 +1,6 @@
 "use client";
 
+import { BackupCard } from "@/components/BackupCard";
 import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
@@ -109,6 +110,9 @@ export default function SettingsPage() {
               <Toggle on={s.shareActivity} onChange={(shareActivity) => updateSettings({ shareActivity })} />
             </Row>
           </Section>
+
+          {/* ── Backup ───────────────────────────────────────────────── */}
+          <BackupCard />
 
           {/* ── Data ─────────────────────────────────────────────────── */}
           <Section title="Data" icon="refresh" shadow="var(--lilt-coral)" tint="var(--tint-coral)">

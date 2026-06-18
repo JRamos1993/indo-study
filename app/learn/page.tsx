@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Icon, type IconName } from "@/components/Icon";
-import { getLessonGroups, getLessons, getLevelGroups } from "@/lib/data";
+import { getLessonGroups, getLessons } from "@/lib/data";
 import { getLanguage } from "@/lib/languages";
 import { masteryPercent, summarize, troubleItemIds, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
@@ -11,7 +11,6 @@ import { currentStreak, todayCount, useStats } from "@/lib/stats";
 import type { Lesson } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
 
-type View = "category" | "difficulty";
 type UnitState = "mastered" | "current" | "next" | "locked";
 
 export default function LearnDashboard() {
@@ -22,9 +21,8 @@ export default function LearnDashboard() {
   const lang = settings.studyLanguage;
   const langCfg = getLanguage(lang);
   const dailyGoal = settings.dailyGoal;
-  const [view, setView] = useState<View>("category");
 
-  const groups = view === "category" ? getLessonGroups(lang) : getLevelGroups(lang);
+  const groups = getLessonGroups(lang);
 
   const order = useMemo(() => {
     const m: Record<string, number> = {};
@@ -166,25 +164,9 @@ export default function LearnDashboard() {
         <QuickLink href="/glossary" icon="book" label="Glossary" shadow="var(--lilt-yellow)" tint="var(--tint-yellow)" />
       </div>
 
-      {/* Course header + mastery track + grouping toggle */}
-      <div className="mb-3.5 flex items-baseline justify-between gap-3">
+      {/* Course header + mastery track */}
+      <div className="mb-3.5">
         <h2 className="text-[18px]">Your course</h2>
-        <div className="inline-flex overflow-hidden rounded-full" style={{ border: "2px solid var(--edge)" }}>
-          {(["category", "difficulty"] as View[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className="px-3.5 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.04em] transition"
-              style={
-                view === v
-                  ? { background: "var(--accent)", color: "var(--accent-ink)" }
-                  : { color: "var(--muted)" }
-              }
-            >
-              {v === "category" ? "Topic" : "Level"}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div

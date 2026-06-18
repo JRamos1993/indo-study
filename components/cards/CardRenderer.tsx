@@ -20,6 +20,7 @@ import {
 import { useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
 import { type Grade, previewIntervals } from "@/lib/srs";
+import { playCorrect } from "@/lib/sfx";
 import { playPhrase } from "@/lib/speech";
 import type { ItemContext } from "@/lib/types";
 import { Icon } from "@/components/Icon";
@@ -336,7 +337,10 @@ function McCard({ ctx, card, englishPool, targetPool, onGrade }: SubProps) {
   }, [selected, choices]);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.target);
+    if (selected && selected === answer) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [selected, answer, ctx.item.target]);
 
   return (
@@ -397,7 +401,10 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
   useEffect(() => {
-    if (checked?.correct) playPhrase(ctx.item.target);
+    if (checked?.correct) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [checked, ctx.item.target]);
 
   return (
@@ -426,7 +433,7 @@ function TypeCard({ ctx, card, onGrade }: SubProps) {
           className="field"
         />
         {!checked && (
-          <button type="submit" className={`mt-3 ${PRIMARY}`}>
+          <button type="submit" disabled={!input.trim()} className={`mt-3 ${PRIMARY}`}>
             Check <span className="opacity-70">(Enter)</span>
           </button>
         )}
@@ -464,7 +471,10 @@ function ListeningCard({ ctx, englishPool, onGrade }: SubProps) {
   }, [ctx.item.target]);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.target);
+    if (selected && selected === answer) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [selected, answer, ctx.item.target]);
 
   return (
@@ -602,7 +612,10 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
   useEffect(() => {
-    if (checked?.correct) playPhrase(ctx.item.target);
+    if (checked?.correct) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [checked, ctx.item.target]);
 
   // Fallback (no maskable word): translate-to-target typing instead.
@@ -646,7 +659,7 @@ function ClozeCard({ ctx, card, onGrade }: SubProps) {
           className="field"
         />
         {!checked && (
-          <button type="submit" className={`mt-3 ${PRIMARY}`}>
+          <button type="submit" disabled={!input.trim()} className={`mt-3 ${PRIMARY}`}>
             Check <span className="opacity-70">(Enter)</span>
           </button>
         )}
@@ -684,7 +697,10 @@ function OrderCard({ ctx, onGrade }: SubProps) {
   const [result, setResult] = useState<null | boolean>(null);
 
   useEffect(() => {
-    if (result === true) playPhrase(ctx.item.target);
+    if (result === true) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [result, ctx.item.target]);
 
   const pickedSet = new Set(picked);
@@ -789,7 +805,10 @@ function ConfusablesCard({ ctx, onGrade }: SubProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selected && selected === answer) playPhrase(ctx.item.target);
+    if (selected && selected === answer) {
+      playCorrect();
+      playPhrase(ctx.item.target);
+    }
   }, [selected, answer, ctx.item.target]);
 
   if (!conf || choices.length < 2) {
@@ -859,7 +878,10 @@ function WordBuildingCard({ ctx, onGrade }: SubProps) {
   const [checked, setChecked] = useState<null | { correct: boolean; fuzzy: boolean }>(null);
 
   useEffect(() => {
-    if (checked?.correct) playPhrase(derived);
+    if (checked?.correct) {
+      playCorrect();
+      playPhrase(derived);
+    }
   }, [checked, derived]);
 
   if (!root) {
@@ -905,7 +927,7 @@ function WordBuildingCard({ ctx, onGrade }: SubProps) {
           className="field"
         />
         {!checked && (
-          <button type="submit" className={`mt-3 ${PRIMARY}`}>
+          <button type="submit" disabled={!input.trim()} className={`mt-3 ${PRIMARY}`}>
             Check <span className="opacity-70">(Enter)</span>
           </button>
         )}

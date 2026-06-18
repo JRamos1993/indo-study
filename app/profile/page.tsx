@@ -273,7 +273,7 @@ function ManageAccount() {
             {pwMsg && (
               <p className="text-[13px] font-bold" style={{ color: pwMsg.ok ? "var(--on-lime)" : "var(--on-coral)" }}>{pwMsg.text}</p>
             )}
-            <button type="submit" disabled={pwBusy} className="btn btn-primary self-start">{pwBusy ? "…" : "Update password"}</button>
+            <button type="submit" disabled={pwBusy || !cur.trim() || !nw.trim()} className="btn btn-primary self-start">{pwBusy ? "…" : "Update password"}</button>
           </form>
         )}
 
@@ -296,7 +296,7 @@ function ManageAccount() {
             </p>
             <input className={field} type="password" placeholder="Confirm your password" autoComplete="current-password" value={delPw} onChange={(e) => setDelPw(e.target.value)} required />
             {delErr && <p className="text-[13px] font-bold" style={{ color: "var(--on-coral)" }}>{delErr}</p>}
-            <button type="submit" disabled={delBusy} className="self-start rounded-full px-5 py-2.5 text-[13px] font-extrabold transition active:translate-y-0.5" style={{ background: "var(--signout)", color: "#fff", border: "2px solid var(--edge)" }}>
+            <button type="submit" disabled={delBusy || !delPw.trim()} className="self-start rounded-full px-5 py-2.5 text-[13px] font-extrabold transition active:translate-y-0.5 disabled:opacity-50" style={{ background: "var(--signout)", color: "#fff", border: "2px solid var(--edge)" }}>
               {delBusy ? "…" : "Delete my account forever"}
             </button>
           </form>

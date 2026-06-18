@@ -130,6 +130,21 @@ h3,
   border-radius: 0.6rem;
 }
 
+/* Clickable things get the hand cursor; disabled controls get not-allowed. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a,
+select,
+summary,
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 @layer components {
   .surface {
     background: var(--surface);

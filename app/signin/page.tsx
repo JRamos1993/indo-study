@@ -167,7 +167,17 @@ export default function SignInPage() {
             </p>
           )}
 
-          <button type="submit" disabled={busy} className="btn btn-primary mt-1 w-full">
+          <button
+            type="submit"
+            disabled={
+              busy ||
+              !email.trim() ||
+              !password.trim() ||
+              (mode === "signup" && !name.trim()) ||
+              (mode === "recover" && !key.trim())
+            }
+            className="btn btn-primary mt-1 w-full"
+          >
             {busy ? "…" : t.cta}
             {!busy && <Icon name="arrow" size={16} strokeWidth={2.4} />}
           </button>

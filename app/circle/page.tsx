@@ -117,7 +117,7 @@ function NoCircle({ onChange }: { onChange: () => void }) {
           placeholder="e.g. Bahasa buddies"
           className="mt-3 w-full rounded-[12px] border-2 border-[color:var(--edge)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] font-semibold outline-none"
         />
-        <button onClick={create} disabled={busy} className="btn btn-primary mt-3 w-full">Create circle</button>
+        <button onClick={create} disabled={busy || !name.trim()} className="btn btn-primary mt-3 w-full">Create circle</button>
       </div>
       <div className="rounded-[18px] p-5" style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "3px 3px 0 0 var(--lilt-violet)" }}>
         <h2 className="text-[18px]">Join with a code</h2>
@@ -128,7 +128,7 @@ function NoCircle({ onChange }: { onChange: () => void }) {
           placeholder="ABC123"
           className="mt-3 w-full rounded-[12px] border-2 border-[color:var(--edge)] bg-[var(--surface)] px-3.5 py-2.5 text-center font-display text-[18px] font-extrabold tracking-[0.2em] outline-none"
         />
-        <button onClick={join} disabled={busy} className="btn btn-secondary mt-3 w-full">Join circle</button>
+        <button onClick={join} disabled={busy || !code.trim()} className="btn btn-secondary mt-3 w-full">Join circle</button>
       </div>
       {err && <p className="sm:col-span-2 text-[13px] font-bold" style={{ color: "var(--on-coral)" }}>{err}</p>}
     </div>

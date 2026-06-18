@@ -17,7 +17,7 @@ export default function SettingsPage() {
       <header className="mb-6">
         <h1 className="text-[30px] leading-none">Settings</h1>
         <p className="mt-2 text-[13.5px] font-bold" style={{ color: "var(--muted)" }}>
-          Tune your learning, appearance, and saved data — all stored on this device.
+          Tune your learning, appearance and privacy — synced across your devices.
         </p>
       </header>
 
@@ -104,6 +104,13 @@ export default function SettingsPage() {
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
               </Select>
+            </Row>
+          </Section>
+
+          {/* ── Privacy ──────────────────────────────────────────────── */}
+          <Section title="Privacy" icon="people" shadow="var(--lilt-violet)" tint="var(--tint-lilac)">
+            <Row label="Share activity with your Circle" hint="Show your daily review count to circle members" last>
+              <Toggle on={s.shareActivity} onChange={(shareActivity) => updateSettings({ shareActivity })} />
             </Row>
           </Section>
 
@@ -228,6 +235,24 @@ function Select({
     >
       {children}
     </select>
+  );
+}
+
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="relative h-8 w-[52px] shrink-0 rounded-full transition-colors"
+      style={{ background: on ? "var(--lilt-lime)" : "var(--track)", border: "2px solid var(--edge)" }}
+    >
+      <span
+        className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-all"
+        style={{ left: on ? "26px" : "2px", background: on ? "var(--lilt-ink)" : "var(--surface)", border: "2px solid var(--edge)" }}
+      />
+    </button>
   );
 }
 

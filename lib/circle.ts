@@ -8,6 +8,13 @@ export interface CircleMember {
   weekReviews: number;
   studiedToday: boolean;
 }
+export interface CircleFeedItem {
+  name: string;
+  day: string;
+  reviews: number;
+  isYou: boolean;
+  isToday: boolean;
+}
 export interface CircleDetail {
   id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface CircleDetail {
   weekTotal: number;
   goal: number | null;
   weekStart: string;
+  feed: CircleFeedItem[];
 }
 export interface CircleData {
   circles: { id: string; name: string }[];

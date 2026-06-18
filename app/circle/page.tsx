@@ -231,6 +231,33 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
         </div>
       </div>
 
+      {/* Recent activity */}
+      {detail.feed.length > 0 && (
+        <div>
+          <h2 className="section-label">Recent activity</h2>
+          <div className="overflow-hidden rounded-[18px]" style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}>
+            {detail.feed.map((f, i) => (
+              <div
+                key={`${f.name}-${f.day}-${i}`}
+                className="flex items-center gap-3 px-4 py-2.5"
+                style={{ borderTop: i > 0 ? "1.5px solid var(--divider)" : undefined }}
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full font-display text-[12px] font-extrabold" style={{ background: f.isToday ? "var(--lilt-lime)" : "var(--tint-violet-2)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}>
+                  {(f.name[0] || "?").toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 text-[13.5px] font-bold">
+                  <b className="font-display">{f.isYou ? "You" : f.name}</b> did{" "}
+                  <b className="font-display" style={{ color: "var(--lilt-violet)" }}>{f.reviews}</b> reviews
+                </span>
+                <span className="shrink-0 text-[11.5px] font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+                  {dayLabel(f.day, detail.weekStart, f.isToday)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <button
           onClick={async () => {
@@ -245,4 +272,12 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
       </div>
     </div>
   );
+}
+
+function dayLabel(day: string, _weekStart: string, isToday: boolean): string {
+  if (isToday) return "Today";
+  // day is YYYY-MM-DD; show "Mon", "Tue" etc. for the current week, else the date.
+  const d = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return day;
+  return d.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" });
 }

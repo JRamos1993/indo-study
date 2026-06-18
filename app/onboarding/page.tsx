@@ -47,6 +47,7 @@ function OnboardingFlow() {
     updateSettings({
       ...(lang ? { studyLanguage: lang } : {}),
       dailyGoal: GOALS[goal].cards,
+      dailyGoalMinutes: GOALS[goal].min,
     });
     router.push("/today");
   };

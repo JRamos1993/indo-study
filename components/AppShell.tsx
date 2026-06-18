@@ -131,6 +131,30 @@ function LangSwitcher({ lang }: { lang: LangId }) {
   );
 }
 
+// Compact flag-only language switcher for the mobile top bar.
+function LangPill({ lang }: { lang: LangId }) {
+  return (
+    <div
+      className="relative grid h-9 w-9 place-items-center rounded-full text-[16px]"
+      style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
+    >
+      <span aria-hidden>{getLanguage(lang).flag}</span>
+      <select
+        aria-label="Study language"
+        value={lang}
+        onChange={(e) => updateSettings({ studyLanguage: e.target.value as LangId })}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      >
+        {LANG_IDS.map((id) => (
+          <option key={id} value={id}>
+            {getLanguage(id).name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ── App frame (sidebar + content + mobile bars) ──────────────────────────────
 
 function AppFrame({ pathname, children }: { pathname: string; children: React.ReactNode }) {
@@ -152,14 +176,17 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
         style={{ borderBottom: "2px solid var(--edge)", background: "color-mix(in srgb, var(--paper) 82%, transparent)" }}
       >
         <Link href="/" aria-label="Lilt — home"><Logo /></Link>
-        <Link
-          href="/profile"
-          aria-label="Profile"
-          className="grid h-9 w-9 place-items-center rounded-full font-display text-[15px] font-extrabold"
-          style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
-        >
-          {initial}
-        </Link>
+        <div className="flex items-center gap-2">
+          <LangPill lang={lang} />
+          <Link
+            href="/profile"
+            aria-label="Profile"
+            className="grid h-9 w-9 place-items-center rounded-full font-display text-[15px] font-extrabold"
+            style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
+          >
+            {initial}
+          </Link>
+        </div>
       </header>
 
       {/* Framed app panel on desktop; plain full-width stack on mobile */}

@@ -71,6 +71,20 @@ async function detail(env: Env, circleId: string, viewerId: string) {
 
   const weekTotal = people.reduce((n, p) => n + p.weekReviews, 0);
 
+  // Recent activity feed (aggregate counts only — no items/answers).
+  const recent = await env.DB.prepare(
+    "SELECT ca.user_id, ca.day, ca.reviews, u.display_name FROM circle_activity ca JOIN users u ON u.id = ca.user_id WHERE ca.circle_id = ? AND ca.reviews > 0 ORDER BY ca.day DESC, ca.reviews DESC LIMIT 12",
+  )
+    .bind(circleId)
+    .all<{ user_id: string; day: string; reviews: number; display_name: string }>();
+  const feed = recent.results.map((r) => ({
+    name: r.display_name,
+    day: r.day,
+    reviews: r.reviews,
+    isYou: r.user_id === viewerId,
+    isToday: r.day === today,
+  }));
+
   return {
     id: c.id,
     name: c.name,
@@ -80,6 +94,7 @@ async function detail(env: Env, circleId: string, viewerId: string) {
     weekTotal,
     goal: goalRow ? goalRow.target_words : null,
     weekStart: start,
+    feed,
   };
 }
 

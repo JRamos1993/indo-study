@@ -45,8 +45,10 @@ async function api(path: string, opts?: RequestInit): Promise<any> {
   }
 }
 
-export const getCircle = () => api("/");
-export const createCircle = (name: string) => api("/", { method: "POST", body: JSON.stringify({ name }) });
+// NB: the mounted root is "/api/circle" (no trailing slash) — Hono won't match
+// "/api/circle/", so call the base directly with an empty path.
+export const getCircle = () => api("");
+export const createCircle = (name: string) => api("", { method: "POST", body: JSON.stringify({ name }) });
 export const joinCircle = (code: string) => api("/join", { method: "POST", body: JSON.stringify({ code }) });
 export const leaveCircle = (circleId: string) => api("/leave", { method: "POST", body: JSON.stringify({ circleId }) });
 export const setCircleGoal = (circleId: string, targetWords: number) =>

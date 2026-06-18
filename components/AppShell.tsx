@@ -170,34 +170,36 @@ function AppFrame({ pathname, children }: { pathname: string; children: React.Re
             className="hidden flex-col gap-1 p-4 lg:flex"
             style={{ background: "var(--surface)", borderRight: "2px solid var(--edge)" }}
           >
-            <Link href="/" aria-label="Lilt — home" className="mb-3 px-2 py-1">
-          <Logo />
-        </Link>
-        <nav className="flex flex-col gap-1">
-          {NAV.map((n) => (
-            <SidebarLink key={n.href} n={n} active={n.match(pathname)} badge={n.href === "/today" ? due : 0} />
-          ))}
-        </nav>
-        <div className="mt-auto flex flex-col gap-2 pt-4">
-          <Link
-            href="/profile"
-            className="flex items-center gap-2.5 rounded-[13px] p-2 transition"
-            style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
-          >
-            <span
-              className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] font-display text-[14px] font-extrabold"
-              style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
-            >
-              {initial}
-            </span>
-            <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-[13.5px] font-extrabold" style={{ color: "var(--ink)" }}>{profile.name}</span>
-              <span className="block text-[11px] font-bold" style={{ color: "var(--muted)" }}>View profile</span>
-            </span>
-            <Icon name="arrow" size={15} strokeWidth={2.2} />
-          </Link>
-          <LangSwitcher lang={lang} />
-        </div>
+            <Link href="/" aria-label="Lilt — home" className="mb-2 px-2 py-1">
+              <Logo />
+            </Link>
+            {/* Account + language controls — kept at the top so they're always
+                reachable (the sidebar grows tall on long pages). */}
+            <div className="mb-2 flex flex-col gap-2 pb-3" style={{ borderBottom: "2px solid var(--divider)" }}>
+              <Link
+                href="/profile"
+                className="flex items-center gap-2.5 rounded-[13px] p-2 transition"
+                style={{ background: "var(--tint-violet-2)", border: "2px solid var(--edge)" }}
+              >
+                <span
+                  className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] font-display text-[14px] font-extrabold"
+                  style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
+                >
+                  {initial}
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block truncate text-[13.5px] font-extrabold" style={{ color: "var(--ink)" }}>{profile.name}</span>
+                  <span className="block text-[11px] font-bold" style={{ color: "var(--muted)" }}>View profile</span>
+                </span>
+                <Icon name="arrow" size={15} strokeWidth={2.2} />
+              </Link>
+              <LangSwitcher lang={lang} />
+            </div>
+            <nav className="flex flex-col gap-1">
+              {NAV.map((n) => (
+                <SidebarLink key={n.href} n={n} active={n.match(pathname)} badge={n.href === "/today" ? due : 0} />
+              ))}
+            </nav>
           </aside>
 
           {/* Content — the dashboard uses the full column (it has a right

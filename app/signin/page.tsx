@@ -56,8 +56,8 @@ export default function SignInPage() {
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col justify-center px-5 py-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/"><Logo /></Link>
-        <Link href="/today" className="text-[12.5px] font-extrabold" style={{ color: "var(--muted)" }}>
-          Skip →
+        <Link href="/" className="text-[12.5px] font-extrabold" style={{ color: "var(--muted)" }}>
+          ← Home
         </Link>
       </div>
 
@@ -124,7 +124,7 @@ export default function SignInPage() {
       </div>
 
       <p className="mt-4 text-center text-[12px] font-bold" style={{ color: "var(--muted)" }}>
-        Your progress works on this device without an account — signing in just syncs it.
+        Free account. Your streak and progress sync across every device you sign in on.
       </p>
     </div>
   );

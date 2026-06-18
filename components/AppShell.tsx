@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import { Icon, type IconName } from "@/components/Icon";
+import { useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { dueItemIds, useProgress } from "@/lib/progress";
@@ -28,11 +29,41 @@ const NAV: NavDef[] = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Onboarding and sign-in are focused full-screen flows with no app chrome.
-  if (pathname.startsWith("/onboarding") || pathname.startsWith("/signin")) return <>{children}</>;
-  // Everything else — including the "/" welcome page — shares the one shell
-  // (sidebar + framed panel) so the whole app looks and navigates the same.
-  return <AppFrame pathname={pathname}>{children}</AppFrame>;
+  // Public, chrome-less pages: the marketing homepage and the sign-in flow.
+  if (pathname === "/" || pathname === "/signin" || pathname.startsWith("/signin/")) {
+    return <>{children}</>;
+  }
+  // Everything else requires an account. Onboarding stays chrome-less; the rest
+  // gets the sidebar/framed-panel shell.
+  const bare = pathname.startsWith("/onboarding");
+  return (
+    <RequireAuth>
+      {bare ? <>{children}</> : <AppFrame pathname={pathname}>{children}</AppFrame>}
+    </RequireAuth>
+  );
+}
+
+// Gate: signed-out visitors are sent to the marketing homepage. The cached
+// user (lib/auth) keeps this from bouncing a logged-in learner while offline.
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { user, status } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (status === "ready" && !user) router.replace("/");
+  }, [status, user, router]);
+
+  if (status !== "ready" || !user) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center" style={{ background: "var(--paper)" }}>
+        <span
+          className="h-6 w-6 animate-spin rounded-full border-[3px] border-current border-t-transparent"
+          style={{ color: "var(--lilt-violet)" }}
+          aria-label="Loading"
+        />
+      </div>
+    );
+  }
+  return <>{children}</>;
 }
 
 // ── Logo ─────────────────────────────────────────────────────────────────────

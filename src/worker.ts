@@ -59,4 +59,18 @@ app.route("/api/circle", circle);
 // reaches here means the static asset was missing — respond defensively.
 app.all("*", (c) => c.json({ error: "not_found" }, 404));
 
-export default app;
+// Daily housekeeping (Cron Trigger): prune expired sessions/invites and stale
+// rate-limit buckets so those tables don't grow unbounded.
+async function scheduled(_event: ScheduledController, env: Env): Promise<void> {
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(now),
+    env.DB.prepare("DELETE FROM invites WHERE expires_at < ?").bind(now),
+    env.DB.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(now - 3_600_000),
+  ]);
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled,
+} satisfies ExportedHandler<Env>;

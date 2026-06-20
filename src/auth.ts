@@ -4,7 +4,11 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./worker";
 
-const PBKDF2_ITER = 210_000; // native WebCrypto; stored per-row so this can rise safely
+// NOTE: capped by the free-tier Workers CPU limit, NOT by security alone. 210k
+// hard-kills the isolate (login/signup → 500) on workers.dev; 100k is the proven
+// ceiling here. Stored per-row, so this can rise if the Worker moves to a paid
+// plan with a higher cpu_ms limit. Combined with a per-user salt + SESSION_PEPPER.
+const PBKDF2_ITER = 100_000; // native WebCrypto SHA-256
 const SESSION_DAYS = 60;
 const COOKIE = "lilt_session";
 const te = new TextEncoder();
@@ -78,14 +82,23 @@ export async function currentUser(c: Context<{ Bindings: Env }>): Promise<Sessio
   if (!token) return null;
   const id = await sha256Hex(token);
   const row = await c.env.DB.prepare(
-    "SELECT u.id, u.email, u.display_name, u.handle, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?",
+    "SELECT u.id, u.email, u.display_name, u.handle, s.expires_at, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?",
   )
     .bind(id)
-    .first<{ id: string; email: string; display_name: string; handle: string | null; expires_at: number }>();
+    .first<{ id: string; email: string; display_name: string; handle: string | null; expires_at: number; last_seen_at: number }>();
   if (!row) return null;
-  if (row.expires_at < Date.now()) {
+  const now = Date.now();
+  if (row.expires_at < now) {
     await c.env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(id).run();
     return null;
+  }
+  // Sliding window: at most once a day, extend the session + refresh the cookie
+  // so a daily-active user is never abruptly logged out at the 60-day mark.
+  if (now - row.last_seen_at > 86_400_000) {
+    await c.env.DB.prepare("UPDATE sessions SET expires_at = ?, last_seen_at = ? WHERE id = ?")
+      .bind(now + SESSION_DAYS * 86_400_000, now, id)
+      .run();
+    setSessionCookie(c, token);
   }
   return { id: row.id, email: row.email, name: row.display_name, handle: row.handle };
 }
@@ -112,9 +125,16 @@ function sameOrigin(c: Context<{ Bindings: Env }>): boolean {
   }
 }
 
-async function rateLimit(c: Context<{ Bindings: Env }>, bucket: string, limit: number, windowMs: number): Promise<boolean> {
-  const ip = c.req.header("CF-Connecting-IP") || c.req.header("x-forwarded-for") || "local";
-  const key = `${bucket}:${ip}`;
+async function rateLimit(
+  c: Context<{ Bindings: Env }>,
+  bucket: string,
+  limit: number,
+  windowMs: number,
+  subject?: string,
+): Promise<boolean> {
+  // Trust only Cloudflare's edge-set IP; x-forwarded-for is client-spoofable.
+  const ip = c.req.header("CF-Connecting-IP") || "local";
+  const key = `${bucket}:${subject ?? ip}`;
   const now = Date.now();
   const row = await c.env.DB.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?")
     .bind(key)
@@ -211,6 +231,10 @@ auth.post("/login", async (c) => {
   const email = (body.email ?? "").trim().toLowerCase();
   const password = body.password ?? "";
   const pepper = c.env.SESSION_PEPPER ?? "";
+  // Per-account throttle on top of the per-IP one — blunts credential stuffing
+  // that rotates IPs against a single email.
+  if (email && !(await rateLimit(c, "login_acct", 8, 60_000, email)))
+    return c.json({ error: "rate_limited" }, 429);
 
   const row = await c.env.DB.prepare(
     "SELECT id, email, display_name, handle, password_hash, password_salt, password_iter FROM users WHERE email_norm = ?",
@@ -279,6 +303,9 @@ auth.post("/recover", async (c) => {
   if ((body.newPassword ?? "").length < 8) return c.json({ error: "weak_password" }, 400);
   const pepper = c.env.SESSION_PEPPER ?? "";
   const email = (body.email ?? "").trim().toLowerCase();
+  // Per-account throttle so a recovery key can't be brute-forced across IPs.
+  if (email && !(await rateLimit(c, "recover_acct", 6, 60_000, email)))
+    return c.json({ error: "rate_limited" }, 429);
   const row = await c.env.DB.prepare(
     "SELECT id, email, display_name, handle, recovery_hash FROM users WHERE email_norm = ?",
   )

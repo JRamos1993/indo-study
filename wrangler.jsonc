@@ -37,6 +37,9 @@
 
   "observability": { "enabled": true },
 
+  // Daily housekeeping — prunes expired sessions/invites + stale rate-limit rows.
+  "triggers": { "crons": ["17 4 * * *"] },
+
   // Non-secret vars only. Secrets (SESSION_PEPPER, …) go via `wrangler secret put`.
   "vars": { "APP_ENV": "production" }
 }

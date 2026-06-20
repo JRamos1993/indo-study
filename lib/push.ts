@@ -71,6 +71,18 @@ export async function enablePush(): Promise<{ ok: boolean; error?: string }> {
   return res.ok ? { ok: true } : { ok: false, error: "server" };
 }
 
+/** Fire an immediate push to this user's devices to confirm delivery works. */
+export async function testPush(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/push/test", { method: "POST", credentials: "include" });
+    const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+    if (data?.ok) return { ok: true };
+    return { ok: false, error: data?.error ?? "failed" };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
 /** Change the local reminder hour; if already subscribed, push the new time. */
 export async function setReminderHour(hour: number): Promise<void> {
   try {

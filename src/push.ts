@@ -77,6 +77,30 @@ push.post("/unsubscribe", async (c) => {
   return c.json({ ok: true });
 });
 
+// POST /api/push/test — send an immediate push to the user's own devices, so
+// they can confirm reminders work end-to-end (needs VAPID_PRIVATE_JWK set).
+push.post("/test", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  if (!c.env.VAPID_PRIVATE_JWK) return c.json({ error: "not_configured" }, 503);
+  const subs = await c.env.DB.prepare("SELECT id, endpoint FROM push_subscriptions WHERE user_id = ?")
+    .bind(user.id)
+    .all<{ id: number; endpoint: string }>();
+  if (!subs.results.length) return c.json({ error: "no_subscription" }, 400);
+  let sent = 0;
+  for (const s of subs.results) {
+    try {
+      const status = await sendPush(c.env, s.endpoint);
+      if (status >= 200 && status < 300) sent += 1;
+      else if (status === 404 || status === 410)
+        await c.env.DB.prepare("DELETE FROM push_subscriptions WHERE id = ?").bind(s.id).run();
+    } catch {
+      /* skip a bad endpoint */
+    }
+  }
+  return c.json({ ok: sent > 0, sent });
+});
+
 // ── cron sender: nudge users with due reviews at their local reminder hour ─────
 export async function sendReminders(env: Env): Promise<void> {
   if (!env.VAPID_PRIVATE_JWK || !env.VAPID_PUBLIC) return; // not configured yet

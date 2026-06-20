@@ -6,7 +6,7 @@ import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
-import { disablePush, enablePush, getReminderHour, isPushOn, pushSupported, setReminderHour } from "@/lib/push";
+import { disablePush, enablePush, getReminderHour, isPushOn, pushSupported, setReminderHour, testPush } from "@/lib/push";
 import {
   type DirectionPref,
   type LearningFocus,
@@ -318,8 +318,33 @@ function ReminderToggle() {
   return (
     <div className="flex flex-col items-end gap-1.5">
       <Toggle on={on} onChange={() => toggle()} />
+      {on && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setMsg(null);
+            const r = await testPush();
+            setMsg(
+              r.ok
+                ? "Sent! Check your device."
+                : r.error === "not_configured"
+                  ? "Reminders aren’t fully set up yet."
+                  : r.error === "no_subscription"
+                    ? "Re-toggle reminders, then try again."
+                    : "Couldn’t send — try again.",
+            );
+            setBusy(false);
+          }}
+          className="text-[11px] font-extrabold underline disabled:opacity-50"
+          style={{ color: "var(--accent)" }}
+        >
+          {busy ? "Sending…" : "Send a test"}
+        </button>
+      )}
       {msg && (
-        <span className="max-w-[190px] text-right text-[11px] font-bold" style={{ color: "var(--lilt-coral)" }}>
+        <span className="max-w-[190px] text-right text-[11px] font-bold" style={{ color: msg.startsWith("Sent") ? "var(--accent)" : "var(--lilt-coral)" }}>
           {msg}
         </span>
       )}

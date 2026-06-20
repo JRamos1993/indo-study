@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Logo } from "@/components/Logo";
-import { login, recover, signup } from "@/lib/auth";
+import { login, recover, signup, useAuth } from "@/lib/auth";
+
+// Invite links land on /signin?join=CODE; we thread the code through auth.
+function inviteCode(): string | null {
+  if (typeof window === "undefined") return null;
+  const c = new URLSearchParams(window.location.search).get("join");
+  return c ? c.trim().toUpperCase().slice(0, 12) : null;
+}
 
 type Mode = "signup" | "login" | "recover";
 
@@ -24,6 +31,9 @@ const ERRORS: Record<string, string> = {
 
 export default function SignInPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const [join, setJoin] = useState<string | null>(null);
+  useEffect(() => setJoin(inviteCode()), []);
   const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,6 +44,13 @@ export default function SignInPage() {
   // After signup/recover we show the recovery key before moving on.
   const [recovery, setRecovery] = useState<{ value: string; next: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Already signed in and following an invite link → straight to joining.
+  useEffect(() => {
+    if (auth.user && join) router.replace(`/circle/?join=${join}`);
+  }, [auth.user, join, router]);
+
+  const afterAuth = join ? `/circle/?join=${join}` : "/today";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +68,13 @@ export default function SignInPage() {
       return;
     }
     if (mode === "login") {
-      router.push("/today");
+      router.push(afterAuth);
     } else {
-      // signup → onboarding; recover → straight back in.
-      setRecovery({ value: res.recoveryKey ?? "", next: mode === "signup" ? "/onboarding" : "/today" });
+      // signup → onboarding (carry the invite through it); recover → back in.
+      setRecovery({
+        value: res.recoveryKey ?? "",
+        next: mode === "signup" ? (join ? `/onboarding/?join=${join}` : "/onboarding") : afterAuth,
+      });
     }
   };
 
@@ -119,6 +139,16 @@ export default function SignInPage() {
           ← Home
         </Link>
       </div>
+
+      {join && (
+        <div
+          className="mb-4 flex items-center gap-2.5 rounded-[14px] px-4 py-3 text-[13px] font-bold"
+          style={{ background: "var(--tint-lime)", border: "2px solid var(--edge)", color: "var(--lilt-ink)" }}
+        >
+          <Icon name="people" size={17} strokeWidth={2.2} />
+          You’re invited to a Circle — {mode === "login" ? "sign in" : "sign up"} to join it.
+        </div>
+      )}
 
       <div
         className="rounded-[22px] p-6 sm:p-7"

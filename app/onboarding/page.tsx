@@ -36,13 +36,14 @@ function OnboardingFlow() {
   const [goal, setGoal] = useState(1); // default: Regular (10 min)
   const [focus, setFocus] = useState<LearningFocus>("balanced");
 
+  const join = params.get("join");
   const finish = () => {
     updateSettings({
       ...(lang ? { studyLanguage: lang } : {}),
       dailyGoalMinutes: GOALS[goal].min,
       learningFocus: focus,
     });
-    router.push("/today");
+    router.push(join ? `/circle/?join=${join}` : "/today");
   };
 
   const canNext = step !== 0 || lang !== null;

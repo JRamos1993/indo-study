@@ -31,6 +31,15 @@ export default function CirclePage() {
       setLoading(false);
       return;
     }
+    // Arrived via an invite link (?join=CODE): join, then clean the URL.
+    const code = new URLSearchParams(window.location.search).get("join");
+    if (code) {
+      joinCircle(code.trim().toUpperCase()).then(() => {
+        window.history.replaceState(null, "", "/circle/");
+        refresh();
+      });
+      return;
+    }
     refresh();
   }, [auth.status, auth.user, refresh]);
 
@@ -140,9 +149,15 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
   const goalPct = detail.goal ? Math.min(100, Math.round((detail.weekTotal / detail.goal) * 100)) : 0;
 
   const copy = () => {
-    navigator.clipboard?.writeText(detail.joinCode).then(() => {
+    const url = `${window.location.origin}/signin?join=${detail.joinCode}`;
+    const shareData = { title: "Join my Lilt circle", text: `Study ${detail.name} with me on Lilt 🌱`, url };
+    if (typeof navigator.share === "function") {
+      navigator.share(shareData).catch(() => {});
+      return;
+    }
+    navigator.clipboard?.writeText(url).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1800);
     });
   };
   const saveGoal = async () => {
@@ -164,7 +179,7 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
         </div>
         <button onClick={copy} className="flex items-center gap-2 rounded-full px-4 py-2 font-display text-[14px] font-extrabold transition active:translate-y-0.5" style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}>
           <Icon name={copied ? "check" : "plus"} size={15} strokeWidth={2.6} />
-          {copied ? "Copied!" : `Invite · ${detail.joinCode}`}
+          {copied ? "Link copied!" : `Invite · ${detail.joinCode}`}
         </button>
       </div>
 

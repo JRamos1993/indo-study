@@ -65,6 +65,7 @@ export interface SessionUser {
   email: string;
   name: string;
   handle: string | null;
+  isPro: boolean;
 }
 
 async function createSession(env: Env, userId: string, token: string): Promise<void> {
@@ -82,10 +83,10 @@ export async function currentUser(c: Context<{ Bindings: Env }>): Promise<Sessio
   if (!token) return null;
   const id = await sha256Hex(token);
   const row = await c.env.DB.prepare(
-    "SELECT u.id, u.email, u.display_name, u.handle, s.expires_at, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?",
+    "SELECT u.id, u.email, u.display_name, u.handle, u.is_pro, s.expires_at, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?",
   )
     .bind(id)
-    .first<{ id: string; email: string; display_name: string; handle: string | null; expires_at: number; last_seen_at: number }>();
+    .first<{ id: string; email: string; display_name: string; handle: string | null; is_pro: number; expires_at: number; last_seen_at: number }>();
   if (!row) return null;
   const now = Date.now();
   if (row.expires_at < now) {
@@ -105,7 +106,7 @@ export async function currentUser(c: Context<{ Bindings: Env }>): Promise<Sessio
       /* renewal is best-effort; the session is still valid this request */
     }
   }
-  return { id: row.id, email: row.email, name: row.display_name, handle: row.handle };
+  return { id: row.id, email: row.email, name: row.display_name, handle: row.handle, isPro: row.is_pro === 1 };
 }
 
 function setSessionCookie(c: Context<{ Bindings: Env }>, token: string): void {

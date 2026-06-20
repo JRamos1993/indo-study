@@ -45,11 +45,13 @@ export default function TalkPage() {
       setMsgs([...history, { role: "assistant", content: res.reply }]);
     } else {
       setError(
-        res.error === "rate_limited"
-          ? "You've practised a lot today — take a break and come back soon."
-          : res.error === "ai_unavailable"
-            ? "The tutor is having a moment. Try again shortly."
-            : "Couldn't reach the tutor — check your connection.",
+        res.error === "upgrade_required"
+          ? "That's today's free chats. Upgrade to Lilt Pro (Settings) for unlimited conversations."
+          : res.error === "rate_limited"
+            ? "You've practised a lot today — take a break and come back soon."
+            : res.error === "ai_unavailable"
+              ? "The tutor is having a moment. Try again shortly."
+              : "Couldn't reach the tutor — check your connection.",
       );
     }
   };

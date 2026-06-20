@@ -50,6 +50,19 @@ ai.post("/chat", async (c) => {
   if (!history.length) return c.json({ error: "bad_request" }, 400);
   if (!c.env.AI) return c.json({ error: "ai_unavailable" }, 503);
 
+  // Free users get a small daily allowance; Pro is unlimited (Lilt Pro). This
+  // also keeps the shared Workers AI spend bounded.
+  const FREE_DAILY = 8;
+  const freeKey = `aifree:${user.id}`;
+  const now = Date.now();
+  if (!user.isPro) {
+    const row = await c.env.DB.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?")
+      .bind(freeKey)
+      .first<{ count: number; window_start: number }>();
+    const used = !row || now - row.window_start > 86_400_000 ? 0 : row.count;
+    if (used >= FREE_DAILY) return c.json({ error: "upgrade_required", freeDaily: FREE_DAILY }, 402);
+  }
+
   try {
     const out = (await c.env.AI.run(MODEL as keyof AiModels, {
       messages: [{ role: "system", content: systemPrompt(langName, scenario) }, ...history],
@@ -58,6 +71,14 @@ ai.post("/chat", async (c) => {
     })) as { response?: string };
     const reply = (out.response ?? "").trim();
     if (!reply) return c.json({ error: "ai_unavailable" }, 503);
+    if (!user.isPro) {
+      // Count only successful replies against the free allowance.
+      await c.env.DB.prepare(
+        "INSERT INTO rate_limits (key,count,window_start) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count = CASE WHEN ? - rate_limits.window_start > 86400000 THEN 1 ELSE rate_limits.count + 1 END, window_start = CASE WHEN ? - rate_limits.window_start > 86400000 THEN ? ELSE rate_limits.window_start END",
+      )
+        .bind(freeKey, now, now, now, now)
+        .run();
+    }
     return c.json({ reply });
   } catch {
     return c.json({ error: "ai_unavailable" }, 503);

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { BackupCard } from "@/components/BackupCard";
 import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
+import { useAuth } from "@/lib/auth";
+import { type ProInfo, fetchPro, startCheckout } from "@/lib/billing";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
 import { disablePush, enablePush, getReminderHour, isPushOn, pushSupported, setReminderHour, testPush } from "@/lib/push";
@@ -47,6 +49,9 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-7">
+          {/* ── Lilt Pro ─────────────────────────────────────────────── */}
+          <ProSection />
+
           {/* ── Learning ─────────────────────────────────────────────── */}
           <Section title="Learning" icon="target" shadow="var(--lilt-violet)" tint="var(--tint-lilac)">
             <Row label="Study language" hint="Which language you're learning" last={false}>
@@ -186,6 +191,77 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Lilt Pro ────────────────────────────────────────────────────────────────
+
+function ProSection() {
+  const { user } = useAuth();
+  const [info, setInfo] = useState<ProInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    fetchPro().then(setInfo);
+  }, []);
+  const isPro = !!(user?.isPro || info?.pro);
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2.5">
+        <span
+          className="grid h-9 w-9 place-items-center rounded-[11px]"
+          style={{ background: "var(--tint-lime)", border: "2px solid var(--edge)", color: "var(--ink)" }}
+        >
+          <Icon name="star" size={19} strokeWidth={1.9} />
+        </span>
+        <h2 className="text-[18px]">Lilt Pro</h2>
+      </div>
+      <div
+        className="rounded-[18px] p-5"
+        style={{
+          background: isPro ? "var(--lilt-lime)" : "var(--lilt-ink)",
+          color: isPro ? "var(--lilt-ink)" : "#fff",
+          border: "2px solid var(--edge)",
+          boxShadow: "4px 4px 0 0 var(--lilt-violet)",
+        }}
+      >
+        {isPro ? (
+          <p className="text-[14px] font-bold">✨ You’re on Lilt Pro — unlimited AI conversations. Thank you for supporting Lilt!</p>
+        ) : (
+          <>
+            <div className="font-display text-[19px] font-extrabold">Unlimited AI conversations</div>
+            <p className="mt-1.5 text-[13.5px] font-semibold" style={{ color: "var(--on-ink)" }}>
+              Practise with the AI tutor as much as you like. Free includes a few chats a day.
+            </p>
+            {info?.available ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setErr(null);
+                  const r = await startCheckout();
+                  if (!r.ok) {
+                    setBusy(false);
+                    setErr("Couldn’t start checkout — try again.");
+                  }
+                }}
+                className="mt-4 inline-flex items-center gap-2 rounded-full px-6 py-3 font-display text-[15px] font-extrabold transition active:translate-y-0.5 disabled:opacity-50"
+                style={{ background: "var(--lilt-lime)", color: "var(--lilt-ink)", border: "2px solid var(--edge)" }}
+              >
+                {busy ? "Starting…" : `Upgrade — ${info.priceLabel}`}
+              </button>
+            ) : (
+              <p className="mt-3 text-[12.5px] font-bold" style={{ color: "var(--on-ink-muted)" }}>
+                Pro is coming soon.
+              </p>
+            )}
+            {err && <p className="mt-2 text-[12px] font-bold" style={{ color: "var(--lilt-coral)" }}>{err}</p>}
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

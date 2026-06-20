@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   name: string;
   handle: string | null;
+  isPro?: boolean;
 }
 
 export interface AuthState {

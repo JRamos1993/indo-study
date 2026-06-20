@@ -2,7 +2,8 @@
 import { Hono } from "hono";
 import ai from "./ai";
 import analytics from "./analytics";
-import auth from "./auth";
+import auth, { currentUser } from "./auth";
+import billing from "./billing";
 import circle from "./circle";
 import push, { sendReminders } from "./push";
 import sync from "./sync";
@@ -21,6 +22,11 @@ export interface Env {
   VAPID_SUBJECT?: string;
   /** Workers AI binding (conversation tutor + scenario generation). */
   AI: Ai;
+  /** Stripe (Lilt Pro). Secrets via `wrangler secret put`; price id + label are vars. */
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PRICE_ID?: string;
+  PRO_PRICE_LABEL?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -30,6 +36,9 @@ const app = new Hono<{ Bindings: Env }>();
 // app while blocking cross-site forgery against the cookie-authed endpoints.
 app.use("/api/*", async (c, next) => {
   const m = c.req.method;
+  // Stripe webhooks are server-to-server (no Origin) and are authenticated by
+  // their signature instead — exempt them from the same-origin check.
+  if (new URL(c.req.url).pathname === "/api/billing/webhook") return next();
   if (m !== "GET" && m !== "HEAD" && m !== "OPTIONS") {
     const src = c.req.header("Origin") || c.req.header("Referer");
     let ok = false;
@@ -69,6 +78,17 @@ app.route("/api/events", analytics);
 app.route("/api/push", push);
 // Workers AI conversation tutor.
 app.route("/api/ai", ai);
+// Lilt Pro (Stripe checkout + webhook).
+app.route("/api/billing", billing);
+// Pro status + config for the upgrade UI.
+app.get("/api/pro", async (c) => {
+  const user = await currentUser(c);
+  return c.json({
+    pro: user?.isPro ?? false,
+    available: !!(c.env.STRIPE_SECRET_KEY && c.env.STRIPE_PRICE_ID),
+    priceLabel: c.env.PRO_PRICE_LABEL ?? "$4.99 / month",
+  });
+});
 
 // `run_worker_first` only routes /api/* to the Worker; any other path that
 // reaches here means the static asset was missing — respond defensively.

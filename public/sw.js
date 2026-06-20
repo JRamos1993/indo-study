@@ -2,7 +2,7 @@
 // Bump CACHE when shipping changes to drop stale caches.
 // v4: Cloudflare static-export hosting — trailingSlash:true means shell
 // navigations resolve to directory-style index.html files.
-const CACHE = "lilt-v4";
+const CACHE = "lilt-v5";
 const SHELL = ["/", "/today/", "/practice/", "/glossary/", "/stats/", "/settings/"];
 
 self.addEventListener("install", (event) => {
@@ -55,4 +55,41 @@ self.addEventListener("fetch", (event) => {
       ),
     );
   }
+});
+
+// Web Push: due-review reminders. Pushes are sent without an encrypted payload
+// (VAPID-authorized only), so we show a fixed message.
+self.addEventListener("push", (event) => {
+  let title = "Lilt";
+  let body = "Your reviews are due — keep your streak alive! 🔥";
+  try {
+    if (event.data) {
+      const d = event.data.json();
+      if (d.title) title = d.title;
+      if (d.body) body = d.body;
+    }
+  } catch {}
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: "lilt-reminder",
+      renotify: true,
+      data: { url: "/today/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/today/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if (c.url.includes(target) && "focus" in c) return c.focus();
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });

@@ -37,9 +37,15 @@
 
   "observability": { "enabled": true },
 
-  // Daily housekeeping — prunes expired sessions/invites + stale rate-limit rows.
-  "triggers": { "crons": ["17 4 * * *"] },
+  // Hourly: send due-review reminders at each user's local hour; daily cleanup.
+  "triggers": { "crons": ["0 * * * *"] },
 
-  // Non-secret vars only. Secrets (SESSION_PEPPER, …) go via `wrangler secret put`.
-  "vars": { "APP_ENV": "production" }
+  // Non-secret vars only. Secrets (SESSION_PEPPER, VAPID_PRIVATE_JWK) go via
+  // `wrangler secret put`. VAPID_PUBLIC is the Web Push application server key —
+  // public by design (it's handed to every browser), so it lives here.
+  "vars": {
+    "APP_ENV": "production",
+    "VAPID_PUBLIC": "BDhUmh6McJG9ummZPGFY8_bDUatEBm4l39G-iBRyKMjS3aHioiTstzd7lUSSvfP7AERPsP21YQSNmgqcToc3tQY",
+    "VAPID_SUBJECT": "mailto:jplramos1993@gmail.com"
+  }
 }

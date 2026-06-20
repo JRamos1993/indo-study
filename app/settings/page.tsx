@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { BackupCard } from "@/components/BackupCard";
 import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
+import { disablePush, enablePush, isPushOn, pushSupported } from "@/lib/push";
 import {
   type DirectionPref,
   type LearningFocus,
@@ -126,6 +128,13 @@ export default function SettingsPage() {
                 onChange={(v) => updateSettings({ theme: v as ThemePref })}
                 menuWidth={130}
               />
+            </Row>
+          </Section>
+
+          {/* ── Notifications ────────────────────────────────────────── */}
+          <Section title="Notifications" icon="flame" shadow="var(--lilt-coral)" tint="var(--tint-coral)">
+            <Row label="Daily review reminders" hint="A nudge at 7pm when reviews are due (this device)" last>
+              <ReminderToggle />
             </Row>
           </Section>
 
@@ -257,6 +266,61 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
         style={{ left: on ? "26px" : "2px", background: on ? "var(--lilt-ink)" : "var(--surface)", border: "2px solid var(--edge)" }}
       />
     </button>
+  );
+}
+
+function ReminderToggle() {
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSupported(pushSupported());
+    isPushOn().then(setOn);
+  }, []);
+
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      if (on) {
+        await disablePush();
+        setOn(false);
+      } else {
+        const r = await enablePush();
+        if (r.ok) setOn(true);
+        else
+          setMsg(
+            r.error === "denied"
+              ? "Allow notifications in your browser, then try again."
+              : r.error === "not_configured"
+                ? "Reminders aren’t set up yet — check back soon."
+                : "Couldn’t enable — try again.",
+          );
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!supported) {
+    return (
+      <span className="text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
+        Not supported here
+      </span>
+    );
+  }
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <Toggle on={on} onChange={() => toggle()} />
+      {msg && (
+        <span className="max-w-[190px] text-right text-[11px] font-bold" style={{ color: "var(--lilt-coral)" }}>
+          {msg}
+        </span>
+      )}
+    </div>
   );
 }
 

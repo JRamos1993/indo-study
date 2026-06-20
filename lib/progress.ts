@@ -94,6 +94,23 @@ export function gradeItem(itemId: string, grade: Grade): GradeUndo {
   return { prev, wasNew };
 }
 
+/** Placement: mark words the learner already knows as mastered so they skip the
+ *  drill. Only affects never-started items — any real progress is preserved.
+ *  Returns how many were newly marked. */
+export function markKnown(itemIds: string[]): number {
+  const store = ensure();
+  const now = Date.now();
+  const updated: ProgressStore = { ...store };
+  let n = 0;
+  for (const id of itemIds) {
+    if (!isNew(updated[id])) continue;
+    updated[id] = { stability: 45, difficulty: 4, dueAt: now + 45 * 86_400_000, lastReviewed: now, reps: 1, lapses: 0 };
+    n += 1;
+  }
+  if (n) commit(updated);
+  return n;
+}
+
 /** Revert a single gradeItem (misclick recovery). */
 export function undoGrade(u: GradeUndo): void {
   const store = ensure();

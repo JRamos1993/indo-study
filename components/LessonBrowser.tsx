@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { masteryPercent, summarize, useProgress } from "@/lib/progress";
+import { markKnown, masteryPercent, summarize, useProgress } from "@/lib/progress";
 import { type Familiarity, familiarity } from "@/lib/srs";
 import type { Lesson, Section } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
@@ -65,6 +65,19 @@ export function LessonBrowser({ lesson }: { lesson: Lesson }) {
             <Link href={`/review?lesson=${lesson.id}`} className="btn btn-secondary rounded-full px-5 py-3 text-[15px]">
               <Icon name="refresh" size={16} strokeWidth={2.2} /> Review {sum.due} due
             </Link>
+          )}
+          {mounted && sum.newCount > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Already know this unit? Mark its ${sum.newCount} new word${sum.newCount === 1 ? "" : "s"} as known and skip them.`)) {
+                  markKnown(allIds);
+                }
+              }}
+              className="btn btn-secondary rounded-full px-5 py-3 text-[15px]"
+            >
+              <Icon name="check" size={16} strokeWidth={2.2} /> I know this
+            </button>
           )}
         </div>
       </div>

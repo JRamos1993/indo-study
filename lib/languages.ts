@@ -18,6 +18,8 @@ import { lesson as id14 } from "@/lib/data/id/unit-14-nature";
 import { lesson as id15 } from "@/lib/data/id/unit-15-work-school";
 import { lesson as id16 } from "@/lib/data/id/unit-16-phrases";
 import { lesson as id17 } from "@/lib/data/id/unit-17-grammar-words";
+import { lesson as id18 } from "@/lib/data/id/unit-18-comparisons";
+import { lesson as id19 } from "@/lib/data/id/unit-19-plans-routines";
 
 // Japanese units
 import { lesson as ja01 } from "@/lib/data/ja/unit-01-hiragana";
@@ -87,6 +89,7 @@ const idGroups: UnitGroup[] = [
     units: [id06, id09, id10, id11, id12, id13, id14, id15],
   },
   { title: "Grammar & expression", icon: "chat", units: [id07, id08, id17, id16] },
+  { title: "Beyond basics (A2)", icon: "star", units: [id18, id19] },
 ];
 
 const jaGroups: UnitGroup[] = [
@@ -106,6 +109,7 @@ const idLevels = [
     title: "Elementary",
     unitIds: [id07.id, id08.id, id12.id, id14.id, id15.id, id17.id, id16.id],
   },
+  { title: "Upper beginner (A2)", unitIds: [id18.id, id19.id] },
 ];
 
 const jaLevels = [

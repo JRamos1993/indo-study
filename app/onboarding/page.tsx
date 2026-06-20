@@ -9,10 +9,10 @@ import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { type LearningFocus, updateSettings } from "@/lib/settings";
 
 const GOALS = [
-  { min: 5, cards: 10, label: "Casual", desc: "5 min a day" },
-  { min: 10, cards: 20, label: "Regular", desc: "10 min a day" },
-  { min: 15, cards: 30, label: "Serious", desc: "15 min a day" },
-  { min: 30, cards: 60, label: "Intense", desc: "30 min a day" },
+  { min: 5, newPerDay: 8, label: "Casual", desc: "5 min a day" },
+  { min: 10, newPerDay: 12, label: "Regular", desc: "10 min a day" },
+  { min: 15, newPerDay: 20, label: "Serious", desc: "15 min a day" },
+  { min: 30, newPerDay: 35, label: "Intense", desc: "30 min a day" },
 ];
 
 const FOCI: { value: LearningFocus; label: string; desc: string; icon: string }[] = [
@@ -41,6 +41,7 @@ function OnboardingFlow() {
     updateSettings({
       ...(lang ? { studyLanguage: lang } : {}),
       dailyGoalMinutes: GOALS[goal].min,
+      newPerDay: GOALS[goal].newPerDay,
       learningFocus: focus,
     });
     router.push(join ? `/circle/?join=${join}` : "/today");
@@ -172,7 +173,7 @@ function OnboardingFlow() {
             >
               <Summary label="Language" value={lang ? `${getLanguage(lang).flag} ${getLanguage(lang).name}` : "Not set"} />
               <div className="my-3 h-0.5" style={{ background: "var(--ink-surface)" }} />
-              <Summary label="Daily goal" value={`${GOALS[goal].min} min · ~${GOALS[goal].cards} cards`} />
+              <Summary label="Daily goal" value={`${GOALS[goal].min} min · ${GOALS[goal].newPerDay} new words/day`} />
               <div className="my-3 h-0.5" style={{ background: "var(--ink-surface)" }} />
               <Summary label="Focus" value={FOCI.find((f) => f.value === focus)?.label ?? "Balanced"} />
             </div>

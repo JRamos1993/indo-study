@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
+import { enablePush, isPushOn, pushSupported } from "@/lib/push";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
@@ -167,6 +168,9 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         );
       }
     }
+    // Brand-new learner (no review history): present the first session in
+    // curriculum order — a coherent Unit-1 start, not a 15-word global shuffle.
+    if (daily && Object.keys(store).length === 0) return base;
     const fresh: ItemContext[] = [];
     const seen: ItemContext[] = [];
     for (const c of shuffle(base)) (isDue(store[c.item.id]) ? fresh : seen).push(c);
@@ -187,11 +191,13 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const makeCard = useCallback(
     (ctx: ItemContext): Card => {
       const speechOK = speechSupported();
-      // Guided unit study: introduce never-seen words as flashcards, quiz the rest.
-      const sub =
-        mode === "unit" && isNew(storeRef.current[ctx.item.id])
-          ? "flashcards"
-          : resolveSub(pickSub(mode === "unit" ? "mixed" : mode, settings.learningFocus), ctx, speechOK);
+      // Teach-before-test: a never-seen word is shown as a flashcard FIRST — in
+      // guided unit study AND the daily smart-mix — so the daily session never
+      // quizzes a word the learner hasn't met yet. Everything else gets drilled.
+      const introNew = (mode === "unit" || mode === "daily") && isNew(storeRef.current[ctx.item.id]);
+      const sub = introNew
+        ? "flashcards"
+        : resolveSub(pickSub(mode === "unit" ? "mixed" : mode, settings.learningFocus), ctx, speechOK);
       const dir: Direction =
         sub === "listening"
           ? "id2en"
@@ -342,6 +348,8 @@ export function PracticeSession({ mode }: { mode: Mode }) {
                 Done
               </Link>
             </div>
+
+            {total > 0 && <ReminderNudge />}
           </div>
         </div>
       </SessionShell>
@@ -461,6 +469,45 @@ function RecapStat({ value, label, accent }: { value: string; label: string; acc
       <div className="mt-1 text-[11px] font-extrabold uppercase tracking-[0.05em]" style={{ color: "var(--muted)" }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+// Day-2 hook: at session end, offer a reminder if push is available and off.
+function ReminderNudge() {
+  const [show, setShow] = useState(false);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!pushSupported()) return;
+    isPushOn().then((on) => setShow(!on));
+  }, []);
+  if (!show) return null;
+  if (done) {
+    return (
+      <p className="mx-auto mt-5 max-w-sm text-center text-[12.5px] font-bold" style={{ color: "var(--accent)" }}>
+        Nice — we’ll nudge you tomorrow. 🔔
+      </p>
+    );
+  }
+  return (
+    <div
+      className="mx-auto mt-5 flex max-w-sm flex-col items-center gap-2.5 rounded-[14px] p-4 text-center"
+      style={{ border: "2px solid var(--edge)", background: "var(--tint-violet)" }}
+    >
+      <p className="text-[12.5px] font-bold" style={{ color: "var(--ink)" }}>
+        These words come back tomorrow. Want a nudge so they stick?
+      </p>
+      <button
+        onClick={async () => {
+          const r = await enablePush();
+          track("reminder_prompt", { ok: r.ok, error: r.error });
+          if (r.ok) setDone(true);
+          else setShow(false);
+        }}
+        className="btn btn-primary rounded-full"
+      >
+        <Icon name="flame" size={15} strokeWidth={2.4} /> Remind me tomorrow
+      </button>
     </div>
   );
 }

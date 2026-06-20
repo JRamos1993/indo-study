@@ -94,11 +94,16 @@ export async function currentUser(c: Context<{ Bindings: Env }>): Promise<Sessio
   }
   // Sliding window: at most once a day, extend the session + refresh the cookie
   // so a daily-active user is never abruptly logged out at the 60-day mark.
+  // Best-effort — a transient write failure must NOT fail an authed request.
   if (now - row.last_seen_at > 86_400_000) {
-    await c.env.DB.prepare("UPDATE sessions SET expires_at = ?, last_seen_at = ? WHERE id = ?")
-      .bind(now + SESSION_DAYS * 86_400_000, now, id)
-      .run();
-    setSessionCookie(c, token);
+    try {
+      await c.env.DB.prepare("UPDATE sessions SET expires_at = ?, last_seen_at = ? WHERE id = ?")
+        .bind(now + SESSION_DAYS * 86_400_000, now, id)
+        .run();
+      setSessionCookie(c, token);
+    } catch {
+      /* renewal is best-effort; the session is still valid this request */
+    }
   }
   return { id: row.id, email: row.email, name: row.display_name, handle: row.handle };
 }
@@ -125,32 +130,50 @@ function sameOrigin(c: Context<{ Bindings: Env }>): boolean {
   }
 }
 
-async function rateLimit(
+// Shared windowed counter over rate_limits. When `bump` is true it counts this
+// hit. Returns whether the bucket is still UNDER `limit`.
+async function rateUnder(
   c: Context<{ Bindings: Env }>,
-  bucket: string,
+  key: string,
   limit: number,
   windowMs: number,
-  subject?: string,
+  bump: boolean,
 ): Promise<boolean> {
-  // Trust only Cloudflare's edge-set IP; x-forwarded-for is client-spoofable.
-  const ip = c.req.header("CF-Connecting-IP") || "local";
-  const key = `${bucket}:${subject ?? ip}`;
   const now = Date.now();
   const row = await c.env.DB.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?")
     .bind(key)
     .first<{ count: number; window_start: number }>();
   if (!row || now - row.window_start > windowMs) {
-    await c.env.DB.prepare(
-      "INSERT INTO rate_limits (key, count, window_start) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count = 1, window_start = ?",
-    )
-      .bind(key, now, now)
-      .run();
+    if (bump)
+      await c.env.DB.prepare(
+        "INSERT INTO rate_limits (key, count, window_start) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count = 1, window_start = ?",
+      )
+        .bind(key, now, now)
+        .run();
     return true;
   }
   if (row.count >= limit) return false;
-  await c.env.DB.prepare("UPDATE rate_limits SET count = count + 1 WHERE key = ?").bind(key).run();
+  if (bump) await c.env.DB.prepare("UPDATE rate_limits SET count = count + 1 WHERE key = ?").bind(key).run();
   return true;
 }
+
+// Per-IP request throttle: counts every hit. Trust only Cloudflare's edge-set
+// IP; x-forwarded-for is client-spoofable.
+function rateLimit(c: Context<{ Bindings: Env }>, bucket: string, limit: number, windowMs: number): Promise<boolean> {
+  const ip = c.req.header("CF-Connecting-IP") || "local";
+  return rateUnder(c, `${bucket}:${ip}`, limit, windowMs, true);
+}
+
+// Per-account FAILED-attempt throttle. Only failures count (failBump on a bad
+// credential) and a success clears the bucket — so a correct password is never
+// blocked by a user's own retries, and an attacker who knows an email can at
+// worst cause a brief window of lockout, not a permanent one.
+const failOver = (c: Context<{ Bindings: Env }>, bucket: string, subject: string, limit: number, windowMs: number) =>
+  rateUnder(c, `acct:${bucket}:${subject}`, limit, windowMs, false).then((under) => !under);
+const failBump = (c: Context<{ Bindings: Env }>, bucket: string, subject: string, windowMs: number) =>
+  rateUnder(c, `acct:${bucket}:${subject}`, Number.MAX_SAFE_INTEGER, windowMs, true);
+const failClear = (c: Context<{ Bindings: Env }>, bucket: string, subject: string) =>
+  c.env.DB.prepare("DELETE FROM rate_limits WHERE key = ?").bind(`acct:${bucket}:${subject}`).run();
 
 const validEmail = (e: unknown): e is string =>
   typeof e === "string" && e.length <= 200 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -231,9 +254,9 @@ auth.post("/login", async (c) => {
   const email = (body.email ?? "").trim().toLowerCase();
   const password = body.password ?? "";
   const pepper = c.env.SESSION_PEPPER ?? "";
-  // Per-account throttle on top of the per-IP one — blunts credential stuffing
-  // that rotates IPs against a single email.
-  if (email && !(await rateLimit(c, "login_acct", 8, 60_000, email)))
+  // Per-account throttle (failed attempts only) on top of the per-IP one —
+  // blunts credential stuffing that rotates IPs against a single email.
+  if (email && (await failOver(c, "login", email, 8, 60_000)))
     return c.json({ error: "rate_limited" }, 429);
 
   const row = await c.env.DB.prepare(
@@ -245,10 +268,15 @@ auth.post("/login", async (c) => {
   if (!row) {
     // Dummy derive so a missing account costs the same time as a wrong password.
     await pbkdf2(password, pepper, new Uint8Array(16), PBKDF2_ITER);
+    if (email) await failBump(c, "login", email, 60_000);
     return c.json({ error: "invalid_credentials" }, 401);
   }
   const ok = await verifyPassword(password, pepper, row.password_salt, row.password_hash, row.password_iter);
-  if (!ok) return c.json({ error: "invalid_credentials" }, 401);
+  if (!ok) {
+    if (email) await failBump(c, "login", email, 60_000);
+    return c.json({ error: "invalid_credentials" }, 401);
+  }
+  if (email) await failClear(c, "login", email);
 
   const token = newToken();
   await createSession(c.env, row.id, token);
@@ -303,8 +331,9 @@ auth.post("/recover", async (c) => {
   if ((body.newPassword ?? "").length < 8) return c.json({ error: "weak_password" }, 400);
   const pepper = c.env.SESSION_PEPPER ?? "";
   const email = (body.email ?? "").trim().toLowerCase();
-  // Per-account throttle so a recovery key can't be brute-forced across IPs.
-  if (email && !(await rateLimit(c, "recover_acct", 6, 60_000, email)))
+  // Per-account throttle (failed attempts only) so a recovery key can't be
+  // brute-forced across rotating IPs.
+  if (email && (await failOver(c, "recover", email, 6, 60_000)))
     return c.json({ error: "rate_limited" }, 429);
   const row = await c.env.DB.prepare(
     "SELECT id, email, display_name, handle, recovery_hash FROM users WHERE email_norm = ?",
@@ -313,8 +342,10 @@ auth.post("/recover", async (c) => {
     .first<{ id: string; email: string; display_name: string; handle: string | null; recovery_hash: string | null }>();
   const given = await sha256Hex(normalizeKey(body.recoveryKey ?? ""));
   if (!row || !row.recovery_hash || given !== row.recovery_hash) {
+    if (email) await failBump(c, "recover", email, 60_000);
     return c.json({ error: "invalid_recovery" }, 401);
   }
+  if (email) await failClear(c, "recover", email);
   const { hash, salt, iter } = await hashPassword(body.newPassword!, pepper);
   const nextKey = makeRecoveryKey();
   const nextHash = await sha256Hex(normalizeKey(nextKey));

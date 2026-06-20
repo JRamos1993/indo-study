@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { Hono } from "hono";
+import analytics from "./analytics";
 import auth from "./auth";
 import circle from "./circle";
 import sync from "./sync";
@@ -54,6 +55,8 @@ app.route("/api/auth", auth);
 app.route("/api/sync", sync);
 // Circle — friends / group goal / leaderboard.
 app.route("/api/circle", circle);
+// Product analytics + client error tracking (ingest is anonymous-friendly).
+app.route("/api/events", analytics);
 
 // `run_worker_first` only routes /api/* to the Worker; any other path that
 // reaches here means the static asset was missing — respond defensively.

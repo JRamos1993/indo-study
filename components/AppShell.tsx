@@ -6,6 +6,7 @@ import { useEffect, useMemo } from "react";
 import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { Logo } from "@/components/Logo";
+import { track } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
@@ -31,6 +32,10 @@ const NAV: NavDef[] = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // One app_open per load (AppShell persists across client navigations).
+  useEffect(() => {
+    track("app_open");
+  }, []);
   // Public, chrome-less pages: the marketing homepage and the sign-in flow.
   if (pathname === "/" || pathname === "/signin" || pathname.startsWith("/signin/")) {
     return <>{children}</>;

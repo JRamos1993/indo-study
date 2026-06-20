@@ -159,7 +159,7 @@ async function rateUnder(
 
 // Per-IP request throttle: counts every hit. Trust only Cloudflare's edge-set
 // IP; x-forwarded-for is client-spoofable.
-function rateLimit(c: Context<{ Bindings: Env }>, bucket: string, limit: number, windowMs: number): Promise<boolean> {
+export function rateLimit(c: Context<{ Bindings: Env }>, bucket: string, limit: number, windowMs: number): Promise<boolean> {
   const ip = c.req.header("CF-Connecting-IP") || "local";
   return rateUnder(c, `${bucket}:${ip}`, limit, windowMs, true);
 }

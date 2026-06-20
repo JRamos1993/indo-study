@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { track } from "@/lib/analytics";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
@@ -213,6 +214,22 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   }, [orderedPool, batchStart, practiceWrong, makeCard]);
 
   const current = queue[0];
+
+  // Analytics: one session_start per visit; session_complete fires exactly once
+  // when the queue empties with at least one answer.
+  useEffect(() => {
+    track("session_start", { mode });
+  }, [mode]);
+  const completeFired = useRef(false);
+  useEffect(() => {
+    if (current) {
+      completeFired.current = false;
+    } else if (stats.answered > 0 && !completeFired.current) {
+      completeFired.current = true;
+      track("session_complete", { mode, answered: stats.answered, correct: stats.correct });
+    }
+  }, [current, stats.answered, stats.correct, mode]);
+
   const remainingInCorpus = orderedPool.length - batchStart - SESSION_CAP;
   const subtitle = daily
     ? "Due reviews, trouble words & new"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { track } from "@/lib/analytics";
 
 export interface AuthUser {
   id: string;
@@ -91,6 +92,7 @@ export async function signup(
   if (ok && data?.user) {
     setUser(data.user);
     set({ status: "ready" });
+    track("signup");
     return { ok: true, recoveryKey: data.recoveryKey };
   }
   return { ok: false, error: data?.error ?? "network" };
@@ -130,6 +132,7 @@ export async function login(email: string, password: string): Promise<{ ok: bool
   if (ok && data?.user) {
     setUser(data.user);
     set({ status: "ready" });
+    track("login");
     return { ok: true };
   }
   return { ok: false, error: data?.error ?? "network" };

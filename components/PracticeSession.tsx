@@ -10,6 +10,7 @@ import { enablePush, isPushOn, pushSupported } from "@/lib/push";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
 import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
+import { savedItems } from "@/lib/saved";
 import type { Card, Mode, SubMode } from "@/lib/practice-types";
 import { type GradeUndo, gradeItem, troubleItemIds, undoGrade, useProgress } from "@/lib/progress";
 import { type Direction, type KindedText, shuffle, wordTokens } from "@/lib/quiz";
@@ -117,15 +118,19 @@ export function PracticeSession({ mode }: { mode: Mode }) {
           ? src.filter((c) => c.sectionId === sectionId)
           : src;
     } else if (daily) {
-      // Today's mix: everything due (new items capped) + trouble words.
-      const allItems = getAllItems();
+      // Today's mix: everything due (new items capped) + trouble words. Includes
+      // phrases saved from AI conversations, so chat vocab enters the SRS loop.
+      const allItems = [...getAllItems(), ...savedItems(lang)];
       const troubleSet = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
       const allowedNew = Math.max(0, settings.newPerDay - getNewIntroducedToday());
       let usedNew = 0;
       base = allItems.filter((c) => {
         const st = store[c.item.id];
+        const fromChat = c.lessonId === "saved";
         if (isDue(st)) {
-          if (isNew(st)) {
+          // Curriculum new words are capped per day; phrases you saved from a
+          // conversation are exempt so they surface promptly.
+          if (isNew(st) && !fromChat) {
             if (usedNew >= allowedNew) return false;
             usedNew += 1;
           }
@@ -134,7 +139,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         return troubleSet.has(c.item.id);
       });
     } else if (trouble) {
-      const allItems = getAllItems();
+      const allItems = [...getAllItems(), ...savedItems(lang)];
       const ids = new Set(troubleItemIds(store, allItems.map((c) => c.item.id)));
       base = allItems.filter((c) => ids.has(c.item.id));
     } else if (dueOnly) {
@@ -169,7 +174,11 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     if (daily) {
       const newOnes = base.filter((c) => isNew(store[c.item.id]));
       const reviews = base.filter((c) => !isNew(store[c.item.id]));
-      return [...reviews.slice(0, 3), ...newOnes, ...shuffle(reviews.slice(3))];
+      // Words you saved from a conversation lead the new-word block so they
+      // resurface promptly, ahead of the day's fresh curriculum words.
+      const chatNew = newOnes.filter((c) => c.lessonId === "saved");
+      const curNew = newOnes.filter((c) => c.lessonId !== "saved");
+      return [...reviews.slice(0, 3), ...chatNew, ...curNew, ...shuffle(reviews.slice(3))];
     }
     const fresh: ItemContext[] = [];
     const seen: ItemContext[] = [];

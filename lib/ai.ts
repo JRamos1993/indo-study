@@ -29,21 +29,36 @@ export const SCENARIOS: Record<string, Scenario[]> = {
   ],
 };
 
-export function parseReply(text: string): { reply: string; en?: string; tip?: string } {
+export interface SavableWord {
+  target: string;
+  en: string;
+}
+
+export function parseReply(text: string): { reply: string; en?: string; tip?: string; words: SavableWord[] } {
   const lines = text.split("\n").map((l) => l.trim());
   let en: string | undefined;
   let tip: string | undefined;
+  let words: SavableWord[] = [];
   const reply: string[] = [];
   for (const l of lines) {
     if (/^EN[:：]/i.test(l)) en = l.replace(/^EN[:：]\s*/i, "");
     else if (/^TIP[:：]/i.test(l)) tip = l.replace(/^TIP[:：]\s*/i, "");
-    else if (l) reply.push(l);
+    else if (/^WORDS[:：]/i.test(l)) {
+      words = l
+        .replace(/^WORDS[:：]\s*/i, "")
+        .split(";")
+        .map((p) => {
+          const [target, ...rest] = p.split("=");
+          return { target: (target || "").trim(), en: rest.join("=").trim() };
+        })
+        .filter((w) => w.target && w.target.length <= 60);
+    } else if (l) reply.push(l);
   }
   const joined = reply.join(" ");
   // If the model returned only an EN line, show that as the reply rather than a
   // blank bubble.
-  if (!joined && en) return { reply: en, tip };
-  return { reply: joined, en, tip };
+  if (!joined && en) return { reply: en, tip, words };
+  return { reply: joined, en, tip, words };
 }
 
 export async function aiChat(

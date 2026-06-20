@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
 import { type ChatMsg, type Scenario, SCENARIOS, aiChat, parseReply } from "@/lib/ai";
 import { getLanguage } from "@/lib/languages";
+import { isSaved, savePhrase } from "@/lib/saved";
 import { useSettings } from "@/lib/settings";
 
 function speak(text: string, speechLang: string) {
@@ -142,7 +143,7 @@ export default function TalkPage() {
               </div>
             </div>
           ) : (
-            <AssistantBubble key={i} text={m.content} speechLang={cfg.speechLang} />
+            <AssistantBubble key={i} text={m.content} speechLang={cfg.speechLang} lang={lang} />
           ),
         )}
         {busy && (
@@ -184,9 +185,10 @@ export default function TalkPage() {
   );
 }
 
-function AssistantBubble({ text, speechLang }: { text: string; speechLang: string }) {
+function AssistantBubble({ text, speechLang, lang }: { text: string; speechLang: string; lang: string }) {
   const [showEn, setShowEn] = useState(false);
-  const { reply, en, tip } = parseReply(text);
+  const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
+  const { reply, en, tip, words } = parseReply(text);
   return (
     <div className="flex justify-start">
       <div
@@ -216,6 +218,33 @@ function AssistantBubble({ text, speechLang }: { text: string; speechLang: strin
           <p className="mt-2 rounded-[10px] px-2.5 py-1.5 text-[12.5px] font-bold" style={{ background: "var(--tint-yellow)", color: "var(--on-yellow)", border: "1.5px solid var(--border-soft)" }}>
             💡 {tip}
           </p>
+        )}
+        {words.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {words.map((w, i) => {
+              const done = justSaved.has(w.target) || isSaved(lang, w.target);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={done}
+                  title={done ? "Saved to your deck" : `Save "${w.target}" — ${w.en}`}
+                  onClick={() => {
+                    savePhrase(w.target, w.en, lang);
+                    setJustSaved((s) => new Set(s).add(w.target));
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-extrabold transition disabled:opacity-70"
+                  style={{
+                    background: done ? "var(--lilt-lime)" : "var(--tint-violet)",
+                    color: done ? "var(--pop-ink)" : "var(--accent)",
+                    border: "1.5px solid var(--border-soft)",
+                  }}
+                >
+                  {done ? "✓" : "+"} {w.target}
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

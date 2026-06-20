@@ -1,6 +1,7 @@
 "use client";
 
 import { exportProgress, replaceProgress } from "@/lib/progress";
+import { type SavedPhrase, getSaved, mergeSaved } from "@/lib/saved";
 import { type Settings, applyRemoteSettings, getSettings, getSettingsUpdatedAt } from "@/lib/settings";
 import { type StatsData, exportStats, replaceStats } from "@/lib/stats";
 import type { CardState } from "@/lib/srs";
@@ -38,6 +39,7 @@ export async function syncNow(): Promise<"ok" | "skip" | "fail"> {
         stats: exportStats(),
         settings: getSettings(),
         settingsUpdatedAt: getSettingsUpdatedAt(),
+        saved: getSaved(),
         today: localToday(),
       }),
     });
@@ -47,7 +49,9 @@ export async function syncNow(): Promise<"ok" | "skip" | "fail"> {
       stats?: StatsData;
       settings?: Partial<Settings>;
       settingsUpdatedAt?: number;
+      saved?: SavedPhrase[];
     };
+    if (Array.isArray(data.saved)) mergeSaved(data.saved);
     if (data.settings && typeof data.settingsUpdatedAt === "number") {
       applyRemoteSettings(data.settings, data.settingsUpdatedAt);
     }

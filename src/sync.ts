@@ -26,6 +26,7 @@ sync.post("/", async (c) => {
     stats?: { reviewsByDay?: Record<string, number>; newByDay?: Record<string, number> };
     settings?: Record<string, any>;
     settingsUpdatedAt?: number;
+    saved?: { id?: string; target?: string; en?: string; lang?: string; ts?: number }[];
     today?: string; // client's LOCAL YYYY-MM-DD, for correct circle projection
   };
   try {
@@ -116,6 +117,24 @@ sync.post("/", async (c) => {
       .run();
   }
 
+  // ── saved phrases (from AI conversations): union-merge, keep earliest ts ──
+  const saved = Array.isArray(body.saved) ? body.saved.slice(0, 2000) : [];
+  if (saved.length) {
+    const sUpsert = c.env.DB.prepare(
+      "INSERT INTO saved_phrases (user_id,id,target,en,lang,ts) VALUES (?,?,?,?,?,?) ON CONFLICT(user_id,id) DO UPDATE SET ts=MIN(ts,excluded.ts)",
+    );
+    const sStmts: D1PreparedStatement[] = [];
+    for (const p of saved) {
+      if (!p || typeof p.id !== "string" || !p.id || p.id.length > 80) continue;
+      if (typeof p.target !== "string" || !p.target.trim()) continue;
+      const en = typeof p.en === "string" ? p.en.slice(0, 200) : "";
+      const lang = typeof p.lang === "string" ? p.lang.slice(0, 8) : "id";
+      const ts = typeof p.ts === "number" && Number.isFinite(p.ts) ? Math.round(p.ts) : now;
+      sStmts.push(sUpsert.bind(user.id, p.id, p.target.slice(0, 120), en, lang, ts));
+    }
+    if (sStmts.length) await c.env.DB.batch(sStmts);
+  }
+
   // Project today's totals into any circles this user shares activity with.
   // Use the client's LOCAL day so the lookup matches the locally-keyed rows
   // (daily_activity is keyed by the user's local date, not UTC).
@@ -167,11 +186,16 @@ sync.post("/", async (c) => {
       }
     : null;
 
+  const mergedSaved = await c.env.DB.prepare("SELECT id,target,en,lang,ts FROM saved_phrases WHERE user_id = ?")
+    .bind(user.id)
+    .all<{ id: string; target: string; en: string; lang: string; ts: number }>();
+
   return c.json({
     progress: mergedProgress,
     stats: { reviewsByDay: outReviews, newByDay: outNew },
     settings,
     settingsUpdatedAt: finalS?.updated_at ?? 0,
+    saved: mergedSaved.results,
   });
 });
 

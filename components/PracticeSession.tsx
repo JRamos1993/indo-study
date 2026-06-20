@@ -169,9 +169,15 @@ export function PracticeSession({ mode }: { mode: Mode }) {
         );
       }
     }
-    // Brand-new learner (no review history): present the first session in
-    // curriculum order — a coherent Unit-1 start, not a 15-word global shuffle.
-    if (daily && Object.keys(store).length === 0) return base;
+    // Daily session = a deliberate arc, not a shuffle: warm up with a few
+    // familiar reviews → meet & use the new words (in curriculum order) →
+    // consolidate the remaining reviews. A brand-new learner has no reviews, so
+    // this is simply Unit-1's new words in order — a coherent first session.
+    if (daily) {
+      const newOnes = base.filter((c) => isNew(store[c.item.id]));
+      const reviews = base.filter((c) => !isNew(store[c.item.id]));
+      return [...reviews.slice(0, 3), ...newOnes, ...shuffle(reviews.slice(3))];
+    }
     const fresh: ItemContext[] = [];
     const seen: ItemContext[] = [];
     for (const c of shuffle(base)) (isDue(store[c.item.id]) ? fresh : seen).push(c);
@@ -428,10 +434,25 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const totalThisBatch = (practiceWrong ?? orderedPool.slice(batchStart, batchStart + SESSION_CAP))
     .length;
   const progressN = Math.min(stats.answered, totalThisBatch);
+  const learningNew = isNew(storeRef.current[current.ctx.item.id]);
 
   return (
     <SessionShell title={MODE_LABEL[mode]} subtitle={subtitle}>
       <div className="mb-4">
+        {daily && (
+          <div className="mb-2">
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.05em]"
+              style={
+                learningNew
+                  ? { background: "var(--lilt-lime)", color: "var(--pop-ink)", border: "2px solid var(--edge)" }
+                  : { background: "var(--tint-violet)", color: "var(--accent)", border: "2px solid var(--border-soft)" }
+              }
+            >
+              {learningNew ? "✦ New word" : "↻ Review"}
+            </span>
+          </div>
+        )}
         <div className="mb-1.5 flex items-center justify-between text-[11.5px] font-extrabold uppercase tracking-[0.05em]" style={{ color: "var(--muted)" }}>
           <span>
             {progressN} / {totalThisBatch}

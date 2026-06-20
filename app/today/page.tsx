@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { Icon, type IconName } from "@/components/Icon";
+import { Icon } from "@/components/Icon";
 import { getAllItems, getLessons } from "@/lib/data";
 import { getLanguage } from "@/lib/languages";
 import { dueItemIds, masteryPercent, summarize, troubleItemIds, useProgress } from "@/lib/progress";
@@ -58,7 +58,7 @@ export default function TodayDashboard() {
           empty={mounted && sessionSize === 0}
           sample={ctx[0]}
         />
-        <ModeGrid lang={lang} reviewsDue={reviewsDue} grammarDue={grammarDue} words={allIds.length} />
+        <ModeGrid lang={lang} />
         <CourseStrip lessons={lessons} store={store} mounted={mounted} langName={cfg.name} />
       </section>
 
@@ -170,48 +170,38 @@ function HeroStat({ n, label, accent }: { n: number; label: string; accent?: boo
 
 // ── Practice mode grid ───────────────────────────────────────────────────────
 
-type Tile = { href: string; label: string; desc: string; icon: IconName; shadow: string; tint: string; badge?: string };
-
-function ModeGrid({ lang, reviewsDue, grammarDue, words }: { lang: string; reviewsDue: number; grammarDue: number; words: number }) {
+function ModeGrid({ lang }: { lang: string }) {
   const f = getLanguage(lang as never).features;
-  const tiles: Tile[] = [
-    { href: "/review", label: "Spaced review", desc: "Everything due, mixed", icon: "refresh", shadow: "var(--lilt-violet)", tint: "var(--tint-lilac)", badge: `${reviewsDue} due` },
-    { href: "/study/flashcards", label: "Flashcards", desc: "Flip & self-rate", icon: "cards", shadow: "var(--lilt-lime)", tint: "var(--tint-lime)" },
-    { href: "/study/listening", label: "Listening", desc: "Hear & choose", icon: "headphones", shadow: "var(--lilt-yellow)", tint: "var(--tint-yellow)" },
-    { href: "/study/speaking", label: "Speaking", desc: "Say it aloud", icon: "mic", shadow: "var(--lilt-coral)", tint: "var(--tint-coral)" },
+  // Secondary: your daily session is the main path; these are optional drills
+  // for when you want to focus one skill.
+  const pills = [
+    { href: "/review", label: "Spaced review" },
+    { href: "/study/flashcards", label: "Flashcards" },
+    { href: "/study/listening", label: "Listening" },
+    { href: "/study/speaking", label: "Speaking" },
+    ...(f.cloze || f.order ? [{ href: "/practice", label: "Grammar gym" }] : []),
+    { href: "/glossary", label: "Glossary" },
   ];
-  if (f.cloze || f.order) {
-    tiles.push({ href: "/practice", label: "Grammar gym", desc: "Word order · which form", icon: "grammar", shadow: "var(--edge)", tint: "var(--lilt-ink)", badge: grammarDue > 0 ? `${grammarDue} due` : undefined });
-  }
-  tiles.push({ href: "/glossary", label: "Glossary", desc: "Your word bank", icon: "doc", shadow: "var(--lilt-violet)", tint: "var(--tint-violet-2)", badge: `${words} words` });
 
   return (
     <div className="mb-8">
-      <div className="mb-3.5 flex items-baseline justify-between">
-        <h2 className="text-[18px]">Practice your way</h2>
-        <Link href="/practice" className="text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>All modes →</Link>
+      <div className="mb-2.5 flex items-baseline justify-between">
+        <h2 className="text-[13.5px] font-extrabold uppercase tracking-[0.04em]" style={{ color: "var(--muted)" }}>
+          Or drill one skill
+        </h2>
+        <Link href="/practice" className="text-[12.5px] font-extrabold" style={{ color: "var(--accent)" }}>
+          All practice →
+        </Link>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {tiles.map((t) => (
+      <div className="flex flex-wrap gap-2">
+        {pills.map((p) => (
           <Link
-            key={t.label}
-            href={t.href}
-            className="rounded-[16px] p-4 transition hover:-translate-x-0.5 hover:-translate-y-0.5"
-            style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: `3px 3px 0 0 ${t.shadow}` }}
+            key={p.href}
+            href={p.href}
+            className="rounded-full px-3.5 py-2 text-[13px] font-extrabold transition active:translate-y-0.5 hover:-translate-y-0.5"
+            style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)" }}
           >
-            <span
-              className="mb-3 grid h-10 w-10 place-items-center rounded-[11px]"
-              style={{ background: t.tint, border: "2px solid var(--edge)", color: t.tint === "var(--lilt-ink)" ? "var(--lilt-lime)" : "var(--ink)" }}
-            >
-              <Icon name={t.icon} size={21} strokeWidth={1.9} />
-            </span>
-            <div className="font-display text-[16px] font-extrabold">{t.label}</div>
-            <div className="mt-0.5 text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>{t.desc}</div>
-            {t.badge && (
-              <span className="mt-2.5 inline-block rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold" style={{ background: "var(--accent)", color: "var(--accent-ink)" }}>
-                {t.badge}
-              </span>
-            )}
+            {p.label}
           </Link>
         ))}
       </div>

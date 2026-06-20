@@ -49,7 +49,8 @@ export default function PracticeHub() {
         <span className="eyebrow">{getLanguage(lang).name} · drills</span>
         <h1 className="mt-1.5 text-[30px] leading-none">Practice</h1>
         <p className="mt-2 text-[14px] font-bold" style={{ color: "var(--muted)" }}>
-          Pick any drill — each pulls from your whole {getLanguage(lang).name} course.
+          Your daily session already weaves these together. Come here when you want to focus a single
+          skill.
         </p>
       </header>
 

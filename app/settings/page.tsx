@@ -5,7 +5,14 @@ import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
-import { type DirectionPref, type ThemePref, updateSettings, useSettings } from "@/lib/settings";
+import { type DirectionPref, type LearningFocus, type ThemePref, updateSettings, useSettings } from "@/lib/settings";
+
+const FOCUS_LABELS: Record<LearningFocus, string> = {
+  balanced: "Balanced mix",
+  conversation: "Conversation",
+  reading: "Reading & vocab",
+  grammar: "Grammar & structure",
+};
 import { resetStats } from "@/lib/stats";
 import { useMounted } from "@/lib/useMounted";
 
@@ -72,7 +79,7 @@ export default function SettingsPage() {
               />
             </Row>
 
-            <Row label="Default direction" hint="Which way new cards are quizzed" last>
+            <Row label="Default direction" hint="Which way new cards are quizzed" last={false}>
               <Dropdown
                 ariaLabel="Default direction"
                 value={s.defaultDirection}
@@ -83,6 +90,16 @@ export default function SettingsPage() {
                 ]}
                 onChange={(v) => updateSettings({ defaultDirection: v as DirectionPref })}
                 menuWidth={210}
+              />
+            </Row>
+
+            <Row label="Focus" hint="Biases your daily mix of exercise types" last>
+              <Dropdown
+                ariaLabel="Learning focus"
+                value={s.learningFocus}
+                options={(Object.keys(FOCUS_LABELS) as LearningFocus[]).map((f) => ({ value: f, label: FOCUS_LABELS[f] }))}
+                onChange={(v) => updateSettings({ learningFocus: v as LearningFocus })}
+                menuWidth={196}
               />
             </Row>
           </Section>
@@ -125,7 +142,7 @@ export default function SettingsPage() {
               </div>
               <p className="mt-3 text-[13.5px] font-bold leading-relaxed" style={{ color: "var(--text-body)" }}>
                 Erase all spaced-repetition progress and stats on this device. Export a backup first
-                from the Stats page if you want to keep it.
+                (in the Backup section above) if you want to keep it.
               </p>
               <button
                 onClick={() => {

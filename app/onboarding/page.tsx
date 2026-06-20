@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
-import { updateSettings } from "@/lib/settings";
+import { type LearningFocus, updateSettings } from "@/lib/settings";
 
 const GOALS = [
   { min: 5, cards: 10, label: "Casual", desc: "5 min a day" },
@@ -14,7 +14,14 @@ const GOALS = [
   { min: 30, cards: 60, label: "Intense", desc: "30 min a day" },
 ];
 
-const STEPS = ["Language", "Daily goal", "Ready"];
+const FOCI: { value: LearningFocus; label: string; desc: string; icon: string }[] = [
+  { value: "balanced", label: "Balanced", desc: "A bit of everything", icon: "🎯" },
+  { value: "conversation", label: "Conversation", desc: "Listening & speaking", icon: "💬" },
+  { value: "reading", label: "Reading", desc: "Recognition & vocab", icon: "📖" },
+  { value: "grammar", label: "Grammar", desc: "Sentence structure", icon: "🧩" },
+];
+
+const STEPS = ["Language", "Daily goal", "Focus", "Ready"];
 
 function Logo() {
   return (
@@ -42,12 +49,14 @@ function OnboardingFlow() {
   const [step, setStep] = useState(initialLang ? 1 : 0);
   const [lang, setLang] = useState<LangId | null>(initialLang);
   const [goal, setGoal] = useState(1); // default: Regular (10 min)
+  const [focus, setFocus] = useState<LearningFocus>("balanced");
 
   const finish = () => {
     updateSettings({
       ...(lang ? { studyLanguage: lang } : {}),
       dailyGoal: GOALS[goal].cards,
       dailyGoalMinutes: GOALS[goal].min,
+      learningFocus: focus,
     });
     router.push("/today");
   };
@@ -145,6 +154,32 @@ function OnboardingFlow() {
         )}
 
         {step === 2 && (
+          <Step title="How do you want to focus?" sub="We'll weight your daily mix toward this. Change it any time in Settings.">
+            <div className="grid grid-cols-2 gap-3">
+              {FOCI.map((f) => {
+                const active = focus === f.value;
+                return (
+                  <button
+                    key={f.value}
+                    onClick={() => setFocus(f.value)}
+                    className="rounded-[16px] p-4 text-left transition active:translate-x-[1px] active:translate-y-[1px]"
+                    style={{
+                      background: active ? "var(--tint-violet)" : "var(--surface)",
+                      border: "2px solid var(--edge)",
+                      boxShadow: active ? "4px 4px 0 0 var(--lilt-violet)" : "3px 3px 0 0 var(--edge)",
+                    }}
+                  >
+                    <div className="text-[24px]" aria-hidden>{f.icon}</div>
+                    <div className="mt-1 font-display text-[15px] font-extrabold">{f.label}</div>
+                    <div className="text-[12px] font-bold" style={{ color: "var(--muted)" }}>{f.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </Step>
+        )}
+
+        {step === 3 && (
           <Step title="You’re all set!" sub="Your first smart-mix session is ready whenever you are.">
             <div
               className="rounded-[18px] p-5"
@@ -153,6 +188,8 @@ function OnboardingFlow() {
               <Summary label="Language" value={lang ? `${getLanguage(lang).flag} ${getLanguage(lang).name}` : "Not set"} />
               <div className="my-3 h-0.5" style={{ background: "#332b52" }} />
               <Summary label="Daily goal" value={`${GOALS[goal].min} min · ~${GOALS[goal].cards} cards`} />
+              <div className="my-3 h-0.5" style={{ background: "#332b52" }} />
+              <Summary label="Focus" value={FOCI.find((f) => f.value === focus)?.label ?? "Balanced"} />
             </div>
           </Step>
         )}
@@ -171,7 +208,7 @@ function OnboardingFlow() {
         ) : (
           <span />
         )}
-        {step < 2 ? (
+        {step < 3 ? (
           <button
             onClick={() => canNext && setStep((s) => s + 1)}
             disabled={!canNext}

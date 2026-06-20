@@ -10,7 +10,7 @@ import { getAllItems, getScopedItems, scopeLabel } from "@/lib/data";
 import type { Card, Mode, SubMode } from "@/lib/practice-types";
 import { type GradeUndo, gradeItem, troubleItemIds, undoGrade, useProgress } from "@/lib/progress";
 import { type Direction, type KindedText, shuffle, wordTokens } from "@/lib/quiz";
-import { useSettings } from "@/lib/settings";
+import { type LearningFocus, useSettings } from "@/lib/settings";
 import { speechSupported } from "@/lib/speech";
 import { type Grade, isDue, isNew } from "@/lib/srs";
 import { currentStreak, getNewIntroducedToday, todayCount, useStats } from "@/lib/stats";
@@ -45,20 +45,32 @@ function pickDirection(ctx: ItemContext): Direction {
   return Math.random() < 0.5 ? "id2en" : "en2id";
 }
 
-function pickSub(mode: Mode): SubMode {
+// Relative likelihood of each mixed/daily exercise type per learning focus.
+// "conversation" leans on listening+speaking, "reading" on recognition/typing,
+// "grammar" on cloze+word-order. resolveSub() still downgrades anything an item
+// can't support, so these are soft preferences, not guarantees.
+const FOCUS_WEIGHTS: Record<LearningFocus, Partial<Record<SubMode, number>>> = {
+  balanced: { mc: 2.0, type: 1.6, cloze: 1.4, listening: 1.4, order: 1.2, speaking: 1.0, flashcards: 1.4 },
+  conversation: { mc: 1.4, type: 0.9, cloze: 0.6, listening: 3.0, order: 0.6, speaking: 3.0, flashcards: 1.0 },
+  reading: { mc: 2.6, type: 2.0, cloze: 1.2, listening: 0.5, order: 0.6, speaking: 0.3, flashcards: 2.4 },
+  grammar: { mc: 1.2, type: 1.6, cloze: 3.0, listening: 0.6, order: 3.0, speaking: 0.5, flashcards: 1.0 },
+};
+
+function pickSub(mode: Mode, focus: LearningFocus): SubMode {
   // Character drills present items as flashcards / multiple-choice / typing.
   if (mode === "kana" || mode === "kanji") {
     const r = Math.random();
     return r < 0.45 ? "mc" : r < 0.8 ? "type" : "flashcards";
   }
   if (mode !== "mixed" && mode !== "daily") return mode as SubMode;
-  const r = Math.random();
-  if (r < 0.2) return "mc";
-  if (r < 0.36) return "type";
-  if (r < 0.5) return "cloze";
-  if (r < 0.64) return "listening";
-  if (r < 0.76) return "order";
-  if (r < 0.86) return "speaking";
+  const weights = FOCUS_WEIGHTS[focus] ?? FOCUS_WEIGHTS.balanced;
+  const entries = Object.entries(weights) as [SubMode, number][];
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  let r = Math.random() * total;
+  for (const [sub, v] of entries) {
+    r -= v;
+    if (r <= 0) return sub;
+  }
   return "flashcards";
 }
 
@@ -178,7 +190,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
       const sub =
         mode === "unit" && isNew(storeRef.current[ctx.item.id])
           ? "flashcards"
-          : resolveSub(pickSub(mode === "unit" ? "mixed" : mode), ctx, speechOK);
+          : resolveSub(pickSub(mode === "unit" ? "mixed" : mode, settings.learningFocus), ctx, speechOK);
       const dir: Direction =
         sub === "listening"
           ? "id2en"
@@ -189,7 +201,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
               : pickDirection(ctx);
       return { ctx, dir, sub, requeues: 0 };
     },
-    [mode, settings.defaultDirection],
+    [mode, settings.defaultDirection, settings.learningFocus],
   );
 
   useEffect(() => {

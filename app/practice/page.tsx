@@ -83,6 +83,27 @@ export default function PracticeHub() {
           );
         })}
       </div>
+
+      {/* Reference — not a drill, so it sits apart from the grid. */}
+      <Link
+        href="/guide/pronunciation"
+        className="mt-4 flex items-center gap-3 rounded-[16px] p-4 transition hover:-translate-x-0.5 hover:-translate-y-0.5"
+        style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "3px 3px 0 0 var(--lilt-violet)" }}
+      >
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px]"
+          style={{ background: "var(--tint-lilac)", border: "2px solid var(--edge)", color: "var(--ink)" }}
+        >
+          <Icon name="headphones" size={21} strokeWidth={1.9} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-[15px] font-extrabold leading-tight">Pronunciation guide</span>
+          <span className="block text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
+            How {getLanguage(lang).name} letters &amp; sounds work
+          </span>
+        </span>
+        <Icon name="arrow" size={18} strokeWidth={2.2} />
+      </Link>
     </div>
   );
 }

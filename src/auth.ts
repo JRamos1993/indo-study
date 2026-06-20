@@ -4,7 +4,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./worker";
 
-const PBKDF2_ITER = 100_000; // native WebCrypto; kept modest for Worker CPU limits
+const PBKDF2_ITER = 210_000; // native WebCrypto; stored per-row so this can rise safely
 const SESSION_DAYS = 60;
 const COOKIE = "lilt_session";
 const te = new TextEncoder();

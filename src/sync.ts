@@ -26,6 +26,7 @@ sync.post("/", async (c) => {
     stats?: { reviewsByDay?: Record<string, number>; newByDay?: Record<string, number> };
     settings?: Record<string, any>;
     settingsUpdatedAt?: number;
+    today?: string; // client's LOCAL YYYY-MM-DD, for correct circle projection
   };
   try {
     body = await c.req.json();
@@ -51,8 +52,9 @@ sync.post("/", async (c) => {
   const upsert = c.env.DB.prepare(
     "INSERT INTO card_states (user_id,item_id,stability,difficulty,due_at,last_reviewed,reps,lapses,updated_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,item_id) DO UPDATE SET stability=excluded.stability,difficulty=excluded.difficulty,due_at=excluded.due_at,last_reviewed=excluded.last_reviewed,reps=excluded.reps,lapses=excluded.lapses,updated_at=excluded.updated_at",
   );
-  for (const [itemId, st] of Object.entries(progress)) {
-    if (!st || typeof st.dueAt !== "number") continue;
+  // Cap entries to bound the batch write (the whole curriculum is ~550 items).
+  for (const [itemId, st] of Object.entries(progress).slice(0, 10_000)) {
+    if (!st || typeof st.dueAt !== "number" || typeof itemId !== "string" || itemId.length > 80) continue;
     const clientLR = st.lastReviewed ?? 0;
     if (clientLR >= (serverLR.get(itemId) ?? 0)) {
       cardStmts.push(
@@ -62,13 +64,20 @@ sync.post("/", async (c) => {
   }
   if (cardStmts.length) await c.env.DB.batch(cardStmts);
 
-  // ── daily activity: max per day ──
+  // ── daily activity: max per day (validated — these feed the shared circle
+  //    leaderboard, so counts are clamped and day keys are format-checked) ──
+  const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const clampCount = (n: unknown) =>
+    Math.max(0, Math.min(100_000, Math.round(typeof n === "number" && Number.isFinite(n) ? n : 0)));
   const statStmts: D1PreparedStatement[] = [];
   const dayUpsert = c.env.DB.prepare(
     "INSERT INTO daily_activity (user_id,day,reviews,new_count,minutes,updated_at) VALUES (?,?,?,?,0,?) ON CONFLICT(user_id,day) DO UPDATE SET reviews=MAX(reviews,excluded.reviews), new_count=MAX(new_count,excluded.new_count), updated_at=excluded.updated_at",
   );
-  for (const day of new Set([...Object.keys(reviewsByDay), ...Object.keys(newByDay)])) {
-    statStmts.push(dayUpsert.bind(user.id, day, reviewsByDay[day] ?? 0, newByDay[day] ?? 0, now));
+  const days = [...new Set([...Object.keys(reviewsByDay), ...Object.keys(newByDay)])]
+    .filter(isDay)
+    .slice(0, 1000);
+  for (const day of days) {
+    statStmts.push(dayUpsert.bind(user.id, day, clampCount(reviewsByDay[day]), clampCount(newByDay[day]), now));
   }
   if (statStmts.length) await c.env.DB.batch(statStmts);
 
@@ -99,7 +108,10 @@ sync.post("/", async (c) => {
   }
 
   // Project today's totals into any circles this user shares activity with.
-  await projectCircleActivity(c.env, user.id, now);
+  // Use the client's LOCAL day so the lookup matches the locally-keyed rows
+  // (daily_activity is keyed by the user's local date, not UTC).
+  const today = typeof body.today === "string" && isDay(body.today) ? body.today : new Date(now).toISOString().slice(0, 10);
+  await projectCircleActivity(c.env, user.id, today);
 
   // ── return authoritative merged state ──
   const mergedCards = await c.env.DB.prepare(
@@ -154,26 +166,26 @@ sync.post("/", async (c) => {
   });
 });
 
-// Mirror today's aggregate review count into the user's circles (privacy: only
-// counts, never item ids or answers), respecting their share_activity setting.
-async function projectCircleActivity(env: Env, userId: string, now: number): Promise<void> {
-  const day = new Date(now).toISOString().slice(0, 10);
+// Mirror a given local day's aggregate review count into the user's circles
+// (privacy: only counts, never item ids or answers), respecting share_activity.
+async function projectCircleActivity(env: Env, userId: string, day: string): Promise<void> {
   const settings = await env.DB.prepare("SELECT share_activity FROM user_settings WHERE user_id = ?")
     .bind(userId)
     .first<{ share_activity: number }>();
   if (settings && settings.share_activity === 0) return;
-  const today = await env.DB.prepare("SELECT reviews FROM daily_activity WHERE user_id = ? AND day = ?")
+  const row = await env.DB.prepare("SELECT reviews FROM daily_activity WHERE user_id = ? AND day = ?")
     .bind(userId, day)
     .first<{ reviews: number }>();
-  const reviews = today?.reviews ?? 0;
+  const reviews = row?.reviews ?? 0;
   const circles = await env.DB.prepare("SELECT circle_id FROM circle_members WHERE user_id = ?")
     .bind(userId)
     .all<{ circle_id: string }>();
   if (!circles.results.length) return;
+  const ts = Date.now();
   const stmts = circles.results.map((r) =>
     env.DB.prepare(
       "INSERT INTO circle_activity (circle_id,user_id,day,reviews,minutes,updated_at) VALUES (?,?,?,?,0,?) ON CONFLICT(circle_id,user_id,day) DO UPDATE SET reviews=excluded.reviews, updated_at=excluded.updated_at",
-    ).bind(r.circle_id, userId, day, reviews, now),
+    ).bind(r.circle_id, userId, day, reviews, ts),
   );
   await env.DB.batch(stmts);
 }

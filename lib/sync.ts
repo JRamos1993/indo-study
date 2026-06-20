@@ -7,6 +7,12 @@ import type { CardState } from "@/lib/srs";
 
 let inFlight = false;
 
+function localToday(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function maxMerge(a: Record<string, number> = {}, b: Record<string, number> = {}): Record<string, number> {
   const out: Record<string, number> = { ...a };
   for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] ?? 0, v);
@@ -32,6 +38,7 @@ export async function syncNow(): Promise<"ok" | "skip" | "fail"> {
         stats: exportStats(),
         settings: getSettings(),
         settingsUpdatedAt: getSettingsUpdatedAt(),
+        today: localToday(),
       }),
     });
     if (!res.ok) return "fail";

@@ -16,6 +16,26 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// CSRF: every mutating /api request must carry a same-origin Origin (or
+// Referer). The static frontend is same-origin, so this is transparent for the
+// app while blocking cross-site forgery against the cookie-authed endpoints.
+app.use("/api/*", async (c, next) => {
+  const m = c.req.method;
+  if (m !== "GET" && m !== "HEAD" && m !== "OPTIONS") {
+    const src = c.req.header("Origin") || c.req.header("Referer");
+    let ok = false;
+    if (src) {
+      try {
+        ok = new URL(src).host === new URL(c.req.url).host;
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) return c.json({ error: "bad_origin" }, 403);
+  }
+  return next();
+});
+
 // Health check — confirms the Worker + D1 binding are wired.
 app.get("/api/health", async (c) => {
   let db: "ok" | "unavailable" = "unavailable";

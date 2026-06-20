@@ -53,12 +53,21 @@ sync.post("/", async (c) => {
     "INSERT INTO card_states (user_id,item_id,stability,difficulty,due_at,last_reviewed,reps,lapses,updated_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,item_id) DO UPDATE SET stability=excluded.stability,difficulty=excluded.difficulty,due_at=excluded.due_at,last_reviewed=excluded.last_reviewed,reps=excluded.reps,lapses=excluded.lapses,updated_at=excluded.updated_at",
   );
   // Cap entries to bound the batch write (the whole curriculum is ~550 items).
+  const fin = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
   for (const [itemId, st] of Object.entries(progress).slice(0, 10_000)) {
-    if (!st || typeof st.dueAt !== "number" || typeof itemId !== "string" || itemId.length > 80) continue;
-    const clientLR = st.lastReviewed ?? 0;
+    if (!st || typeof itemId !== "string" || itemId.length > 80) continue;
+    if (typeof st.dueAt !== "number" || !Number.isFinite(st.dueAt)) continue;
+    // Coerce/clamp every numeric field so a buggy/tampered client can't persist
+    // NaN/Infinity/garbage into card_states (which round-trips to all devices).
+    const stability = Math.max(0, fin(st.stability, 0));
+    const difficulty = Math.min(10, Math.max(1, fin(st.difficulty, 5)));
+    const reps = Math.max(0, Math.round(fin(st.reps, 0)));
+    const lapses = Math.max(0, Math.round(fin(st.lapses, 0)));
+    const lastReviewed = st.lastReviewed == null ? null : fin(st.lastReviewed, Date.now());
+    const clientLR = lastReviewed ?? 0;
     if (clientLR >= (serverLR.get(itemId) ?? 0)) {
       cardStmts.push(
-        upsert.bind(user.id, itemId, st.stability, st.difficulty, st.dueAt, st.lastReviewed, st.reps, st.lapses, now),
+        upsert.bind(user.id, itemId, stability, difficulty, st.dueAt, lastReviewed, reps, lapses, now),
       );
     }
   }

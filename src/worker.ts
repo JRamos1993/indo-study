@@ -104,7 +104,9 @@ async function scheduled(_event: ScheduledController, env: Env): Promise<void> {
     await env.DB.batch([
       env.DB.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(now),
       env.DB.prepare("DELETE FROM invites WHERE expires_at < ?").bind(now),
-      env.DB.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(now - 3_600_000),
+      // 24h: don't evict the daily AI-cost buckets before their window ends
+      // (shorter login/burst buckets are long stale by 24h anyway).
+      env.DB.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(now - 86_400_000),
     ]);
   }
 }

@@ -44,6 +44,9 @@ export default function TalkPage() {
     if (res.ok && res.reply) {
       setMsgs([...history, { role: "assistant", content: res.reply }]);
     } else {
+      // Roll back the optimistic user turn so the transcript isn't left with an
+      // unanswered message that the next send would build on.
+      setMsgs(history.slice(0, -1));
       setError(
         res.error === "upgrade_required"
           ? "That's today's free chats. Upgrade to Lilt Pro (Settings) for unlimited conversations."
@@ -159,7 +162,9 @@ export default function TalkPage() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSend()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) onSend();
+          }}
           placeholder={`Reply in ${cfg.name}…`}
           className="field flex-1"
           autoComplete="off"

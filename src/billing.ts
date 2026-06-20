@@ -54,12 +54,24 @@ billing.post("/webhook", async (c) => {
   }
   const obj = (event.data?.object ?? {}) as Record<string, unknown>;
   if (event.type === "checkout.session.completed") {
+    // Always link the Stripe customer to the account, but only grant Pro when
+    // the session was actually paid — a 100%-off / async-unpaid session is not.
     const userId = obj.client_reference_id as string | undefined;
     const customer = (obj.customer as string | undefined) ?? null;
+    const paid = obj.payment_status === "paid" ? 1 : 0;
     if (userId) {
-      await c.env.DB.prepare("UPDATE users SET is_pro = 1, stripe_customer_id = ? WHERE id = ?")
-        .bind(customer, userId)
+      await c.env.DB.prepare("UPDATE users SET stripe_customer_id = ?, is_pro = MAX(is_pro, ?) WHERE id = ?")
+        .bind(customer, paid, userId)
         .run();
+    }
+  } else if (event.type === "customer.subscription.updated") {
+    // Authoritative subscription state — covers activation after async payment,
+    // and revocation on past_due / canceled / unpaid.
+    const customer = obj.customer as string | undefined;
+    const status = obj.status as string | undefined;
+    if (customer) {
+      const pro = status === "active" || status === "trialing" ? 1 : 0;
+      await c.env.DB.prepare("UPDATE users SET is_pro = ? WHERE stripe_customer_id = ?").bind(pro, customer).run();
     }
   } else if (event.type === "customer.subscription.deleted") {
     const customer = obj.customer as string | undefined;

@@ -81,12 +81,19 @@ export interface GradeUndo {
 
 export function gradeItem(itemId: string, grade: Grade): GradeUndo {
   const store = ensure();
-  const wasNew = isNew(store[itemId]);
   const ids = [itemId, ...(duplicateGroups[itemId] ?? [])];
   const prev: Record<string, CardState | undefined> = {};
   for (const id of ids) prev[id] = store[id];
 
-  const next = schedule(store[itemId], grade, Date.now(), getSettings().targetRetention);
+  // Schedule from the most-advanced copy in the duplicate group, so grading a
+  // less-advanced sibling never downgrades a mastered one.
+  let base = store[itemId];
+  for (const id of ids) {
+    const s = store[id];
+    if (s && (!base || s.stability > base.stability)) base = s;
+  }
+  const wasNew = isNew(base);
+  const next = schedule(base, grade, Date.now(), getSettings().targetRetention);
   const updated: ProgressStore = { ...store };
   for (const id of ids) updated[id] = next; // duplicates share progress
   commit(updated);
@@ -101,8 +108,11 @@ export function markKnown(itemIds: string[]): number {
   const store = ensure();
   const now = Date.now();
   const updated: ProgressStore = { ...store };
+  // Include cross-unit duplicate copies so a word known in one unit is known
+  // everywhere (matches gradeItem's shared-progress behaviour).
+  const ids = [...new Set(itemIds.flatMap((id) => [id, ...(duplicateGroups[id] ?? [])]))];
   let n = 0;
-  for (const id of itemIds) {
+  for (const id of ids) {
     if (!isNew(updated[id])) continue;
     updated[id] = { stability: 45, difficulty: 4, dueAt: now + 45 * 86_400_000, lastReviewed: now, reps: 1, lapses: 0 };
     n += 1;

@@ -39,7 +39,11 @@ export function parseReply(text: string): { reply: string; en?: string; tip?: st
     else if (/^TIP[:：]/i.test(l)) tip = l.replace(/^TIP[:：]\s*/i, "");
     else if (l) reply.push(l);
   }
-  return { reply: reply.join(" "), en, tip };
+  const joined = reply.join(" ");
+  // If the model returned only an EN line, show that as the reply rather than a
+  // blank bubble.
+  if (!joined && en) return { reply: en, tip };
+  return { reply: joined, en, tip };
 }
 
 export async function aiChat(

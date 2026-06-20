@@ -235,7 +235,7 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     } else if (stats.answered > 0 && !completeFired.current) {
       completeFired.current = true;
       track("session_complete", { mode, answered: stats.answered, correct: stats.correct });
-      const fresh = claimNewAchievements(metricsFrom(storeRef.current, statsData, lang));
+      const fresh = claimNewAchievements(metricsFrom(storeRef.current, statsData, lang), lang);
       if (fresh.length) {
         setNewAchievements(fresh);
         track("achievement", { ids: fresh.map((a) => a.id).join(",") });

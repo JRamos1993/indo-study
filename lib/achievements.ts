@@ -60,12 +60,14 @@ export function metricsFrom(store: ProgressStore, stats: StatsData, lang: LangId
   };
 }
 
-const SEEN_KEY = "lilt:achievements:v1";
+// Per-language, since metrics are per study-language — so earning a milestone
+// in Indonesian doesn't suppress the same toast when you start Japanese.
+const seenKey = (lang: LangId) => `lilt:achievements:v1:${lang}`;
 
-function readSeen(): string[] {
+function readSeen(lang: LangId): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const v = JSON.parse(localStorage.getItem(SEEN_KEY) || "[]");
+    const v = JSON.parse(localStorage.getItem(seenKey(lang)) || "[]");
     return Array.isArray(v) ? v : [];
   } catch {
     return [];
@@ -74,16 +76,16 @@ function readSeen(): string[] {
 
 /**
  * Returns achievements that are earned now but weren't last time, and records
- * them as seen — so each one celebrates exactly once. Side-effecting; call from
- * an effect, not during render.
+ * them as seen — so each one celebrates exactly once per language. Side-effecting;
+ * call from an effect, not during render.
  */
-export function claimNewAchievements(m: AchMetrics): Achievement[] {
+export function claimNewAchievements(m: AchMetrics, lang: LangId): Achievement[] {
   if (typeof window === "undefined") return [];
-  const seen = readSeen();
+  const seen = readSeen(lang);
   const fresh = ACHIEVEMENTS.filter((a) => a.earned(m) && !seen.includes(a.id));
   if (fresh.length) {
     try {
-      localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, ...fresh.map((a) => a.id)]));
+      localStorage.setItem(seenKey(lang), JSON.stringify([...seen, ...fresh.map((a) => a.id)]));
     } catch {
       /* ignore */
     }

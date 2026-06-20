@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
 import { type ChatMsg, type Scenario, SCENARIOS, aiChat, parseReply } from "@/lib/ai";
 import { getLanguage } from "@/lib/languages";
-import { isSaved, savePhrase } from "@/lib/saved";
+import { isSaved, savePhrase, useSaved } from "@/lib/saved";
 import { useSettings } from "@/lib/settings";
 
 function speak(text: string, speechLang: string) {
@@ -25,6 +26,7 @@ export default function TalkPage() {
   const lang = useSettings().studyLanguage;
   const cfg = getLanguage(lang);
   const scenarios = SCENARIOS[lang] ?? SCENARIOS.id;
+  const savedCount = useSaved().filter((p) => p.lang === lang).length;
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
@@ -85,6 +87,18 @@ export default function TalkPage() {
             simple, and nudges you when you slip.
           </p>
         </header>
+        {savedCount > 0 && (
+          <Link
+            href="/today/session/"
+            className="mb-3 flex items-center gap-2.5 rounded-[14px] px-4 py-3 transition hover:-translate-y-0.5"
+            style={{ background: "var(--tint-lime)", border: "2px solid var(--border-soft)" }}
+          >
+            <Icon name="star" size={17} strokeWidth={2.4} />
+            <span className="text-[13px] font-extrabold" style={{ color: "var(--ink)" }}>
+              {savedCount} {savedCount === 1 ? "word" : "words"} saved from chats — review them in Today&apos;s study
+            </span>
+          </Link>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {scenarios.map((s, i) => (
             <button

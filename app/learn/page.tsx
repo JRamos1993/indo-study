@@ -89,13 +89,22 @@ export default function LearnDashboard() {
           {langCfg.flag} {langCfg.name} · Course
         </div>
         <h1 className="mt-1 text-[30px] leading-none">{langCfg.greeting}</h1>
-        <Link
-          href="/guide/pronunciation"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition active:translate-y-0.5"
-          style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)" }}
-        >
-          <Icon name="headphones" size={14} strokeWidth={2.2} /> Pronunciation guide
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/guide/pronunciation"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition active:translate-y-0.5"
+            style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)" }}
+          >
+            <Icon name="headphones" size={14} strokeWidth={2.2} /> Pronunciation guide
+          </Link>
+          <Link
+            href="/guide/grammar"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition active:translate-y-0.5"
+            style={{ background: "var(--surface)", border: "2px solid var(--edge)", color: "var(--ink)" }}
+          >
+            <Icon name="book" size={14} strokeWidth={2.2} /> Grammar guide
+          </Link>
+        </div>
       </header>
 
       {/* Daily session — bold sticker hero */}

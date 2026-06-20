@@ -59,13 +59,14 @@ export default function Landing() {
               Indonesian · 日本語
             </span>
             <h1 className="mt-4 font-display text-[44px] leading-[0.98] text-white sm:text-[60px]">
-              Study smarter,
+              Learn it for real.
               <br />
-              <span style={{ color: "var(--lilt-lime)" }}>not longer.</span>
+              <span style={{ color: "var(--lilt-lime)" }}>Not for the streak.</span>
             </h1>
             <p className="mt-4 max-w-md text-[15px] font-medium" style={{ color: "var(--on-ink)" }}>
-              A bold little app for beginner Japanese and Indonesian — kana, kanji and the words you
-              actually use, on a memory schedule that does the remembering for you.
+              Beginner Indonesian and Japanese on a memory schedule that does the remembering for
+              you — real spaced repetition, ten ways to practise, and a calm daily session. No
+              leagues, no lives, no guilt.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -197,13 +198,18 @@ export default function Landing() {
         </section>
 
         <footer
-          className="mt-10 flex flex-wrap items-center justify-between gap-2 pt-6 text-[12.5px] font-bold"
+          className="mt-10 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 pt-6 text-[12.5px] font-bold"
           style={{ borderTop: "2px solid var(--edge)", color: "var(--muted)" }}
         >
           <span>
-            <b className="font-display" style={{ color: "var(--ink)" }}>Lilt</b> · a personal language-learning app.
+            <b className="font-display" style={{ color: "var(--ink)" }}>Lilt</b> · learn Indonesian & Japanese.
           </span>
-          <span>Indonesian · 日本語</span>
+          <nav className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/guide/grammar">Grammar</Link>
+            <Link href="/guide/pronunciation">Pronunciation</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+          </nav>
         </footer>
       </div>
     </div>

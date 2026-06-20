@@ -1,5 +1,6 @@
 "use client";
 
+import { PublicPage } from "@/components/PublicPage";
 import { useSettings } from "@/lib/settings";
 
 type Row = [string, string, string];
@@ -82,7 +83,7 @@ export default function PronunciationGuide() {
   const g = lang === "ja" ? ja : id;
 
   return (
-    <div>
+    <PublicPage>
       <div className="mb-6">
         <h1 className="text-2xl">{g.title}</h1>
         <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{g.intro}</p>
@@ -104,7 +105,7 @@ export default function PronunciationGuide() {
       <p className="mt-6 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
         Use the speaker icons anywhere in the app to hear words aloud.
       </p>
-    </div>
+    </PublicPage>
   );
 }
 

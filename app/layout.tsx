@@ -25,13 +25,31 @@ const THEME_INIT = `(function(){try{var t=(JSON.parse(localStorage.getItem('indo
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+const tagline =
+  "Learn Indonesian & Japanese that actually sticks — FSRS spaced repetition, ten ways to practise, and a calm daily session. No leagues, no guilt.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Lilt — learn Indonesian & Japanese",
-  description:
-    "A practice studio for Indonesian and Japanese — spaced review, a real exercise engine, and your whole word bank, offline.",
+  title: {
+    default: "Lilt — learn Indonesian & Japanese",
+    template: "%s · Lilt",
+  },
+  description: tagline,
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Lilt", statusBarStyle: "default" },
+  applicationName: "Lilt",
+  openGraph: {
+    type: "website",
+    siteName: "Lilt",
+    url: siteUrl,
+    title: "Lilt — learn Indonesian & Japanese",
+    description: tagline,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lilt — learn Indonesian & Japanese",
+    description: tagline,
+  },
 };
 
 export const viewport: Viewport = {

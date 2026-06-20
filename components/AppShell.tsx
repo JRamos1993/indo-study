@@ -36,8 +36,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     track("app_open");
   }, []);
-  // Public, chrome-less pages: the marketing homepage and the sign-in flow.
-  if (pathname === "/" || pathname === "/signin" || pathname.startsWith("/signin/")) {
+  // Public, chrome-less pages: marketing homepage, sign-in, legal, and the
+  // guides (logged-out-readable for SEO; they bring their own header).
+  const isPublic =
+    pathname === "/" ||
+    pathname === "/signin" ||
+    pathname.startsWith("/signin/") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/guide/");
+  if (isPublic) {
     return <>{children}</>;
   }
   // Everything else requires an account. Onboarding stays chrome-less; the rest

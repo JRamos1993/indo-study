@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { track } from "@/lib/analytics";
+import { type Achievement, claimNewAchievements, metricsFrom } from "@/lib/achievements";
 import { enablePush, isPushOn, pushSupported } from "@/lib/push";
 import { getAffixPairs } from "@/lib/affixes";
 import { getConfusableItems } from "@/lib/confusables";
@@ -227,13 +228,20 @@ export function PracticeSession({ mode }: { mode: Mode }) {
     track("session_start", { mode });
   }, [mode]);
   const completeFired = useRef(false);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   useEffect(() => {
     if (current) {
       completeFired.current = false;
     } else if (stats.answered > 0 && !completeFired.current) {
       completeFired.current = true;
       track("session_complete", { mode, answered: stats.answered, correct: stats.correct });
+      const fresh = claimNewAchievements(metricsFrom(storeRef.current, statsData, lang));
+      if (fresh.length) {
+        setNewAchievements(fresh);
+        track("achievement", { ids: fresh.map((a) => a.id).join(",") });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, stats.answered, stats.correct, mode]);
 
   const remainingInCorpus = orderedPool.length - batchStart - SESSION_CAP;
@@ -354,6 +362,31 @@ export function PracticeSession({ mode }: { mode: Mode }) {
                 Done
               </Link>
             </div>
+
+            {newAchievements.length > 0 && (
+              <div className="mx-auto mt-5 max-w-sm space-y-2">
+                {newAchievements.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+                    style={{ background: "var(--lilt-lime)", border: "2px solid var(--edge)", color: "var(--lilt-ink)" }}
+                  >
+                    <span
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+                      style={{ background: "var(--lilt-ink)", color: "var(--lilt-lime)" }}
+                    >
+                      <Icon name={a.icon} size={18} strokeWidth={2.2} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: "var(--on-lime)" }}>
+                        🏆 Achievement unlocked
+                      </span>
+                      <span className="block font-display text-[15px] font-extrabold leading-tight">{a.title}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {total > 0 && <ReminderNudge />}
           </div>

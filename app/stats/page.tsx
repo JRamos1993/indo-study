@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Icon } from "@/components/Icon";
+import { ACHIEVEMENTS, type Achievement, TIER_COLOR, metricsFrom } from "@/lib/achievements";
 import { getLessons } from "@/lib/data";
 import { masteryPercent, reviewForecast, summarize, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
@@ -46,6 +47,8 @@ export default function StatsPage() {
   const dayNames = nextSevenDayLabels();
   const goalPct = Math.min(100, (today / dailyGoal) * 100);
   const goalReached = today >= dailyGoal;
+  const achMetrics = metricsFrom(store, stats, settings.studyLanguage);
+  const achEarned = ACHIEVEMENTS.filter((a) => a.earned(achMetrics)).length;
 
   return (
     <div>
@@ -158,6 +161,19 @@ export default function StatsPage() {
         </div>
       </div>
 
+      {/* ── Achievements ────────────────────────────────────────────────── */}
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="section-label" style={{ marginBottom: 0 }}>Achievements</h2>
+        <span className="text-[12.5px] font-extrabold" style={{ color: "var(--muted)" }}>
+          {achEarned}/{ACHIEVEMENTS.length}
+        </span>
+      </div>
+      <div className="mb-7 grid grid-cols-3 gap-3 sm:grid-cols-4">
+        {ACHIEVEMENTS.map((a) => (
+          <Badge key={a.id} ach={a} earned={a.earned(achMetrics)} />
+        ))}
+      </div>
+
       {/* ── Per-lesson mastery ──────────────────────────────────────────── */}
       <h2 className="section-label">By lesson</h2>
       <div
@@ -253,6 +269,32 @@ function StatCard({
       <div className="mt-1.5 text-[11.5px] font-extrabold uppercase tracking-[0.04em]" style={{ color: "var(--muted)" }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+function Badge({ ach, earned }: { ach: Achievement; earned: boolean }) {
+  return (
+    <div
+      className="flex flex-col items-center gap-1.5 rounded-[14px] p-3 text-center"
+      style={{
+        background: earned ? "var(--surface)" : "var(--panel-alt)",
+        border: "2px solid var(--edge)",
+        boxShadow: earned ? `3px 3px 0 0 ${TIER_COLOR[ach.tier]}` : undefined,
+        opacity: earned ? 1 : 0.55,
+      }}
+      title={ach.desc}
+    >
+      <span
+        className="grid h-10 w-10 place-items-center rounded-full"
+        style={{ background: earned ? TIER_COLOR[ach.tier] : "var(--track)", border: "2px solid var(--edge)", color: "var(--ink)" }}
+      >
+        <Icon name={earned ? ach.icon : "lock"} size={18} strokeWidth={2.1} />
+      </span>
+      <span className="text-[11.5px] font-extrabold leading-tight">{ach.title}</span>
+      <span className="text-[10px] font-bold leading-tight" style={{ color: "var(--muted)" }}>
+        {ach.desc}
+      </span>
     </div>
   );
 }

@@ -98,6 +98,21 @@ async function detail(env: Env, circleId: string, viewerId: string) {
   };
 }
 
+// GET /api/circle/invite?code=CODE — public preview of an invite (no auth):
+// the code IS the invitation, so resolving it to a circle + inviter name is
+// safe and lets the sign-in page say "Maya invited you to …".
+circle.get("/invite", async (c) => {
+  const code = (c.req.query("code") ?? "").trim().toUpperCase().slice(0, 12);
+  if (!code) return c.json({ error: "no_code" }, 400);
+  const row = await c.env.DB.prepare(
+    "SELECT c.name AS circle, u.display_name AS inviter FROM circles c JOIN users u ON u.id = c.owner_id WHERE c.join_code = ?",
+  )
+    .bind(code)
+    .first<{ circle: string; inviter: string }>();
+  if (!row) return c.json({ error: "not_found" }, 404);
+  return c.json({ circle: row.circle, inviter: row.inviter });
+});
+
 // GET /api/circle — the viewer's circles + detail of the first one.
 circle.get("/", async (c) => {
   const user = await currentUser(c);

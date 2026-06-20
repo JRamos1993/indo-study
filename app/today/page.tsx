@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { Icon, type IconName } from "@/components/Icon";
 import { getAllItems, getLessons } from "@/lib/data";
 import { getLanguage } from "@/lib/languages";
-import { dueItemIds, masteryPercent, summarize, useProgress } from "@/lib/progress";
+import { dueItemIds, masteryPercent, summarize, troubleItemIds, useProgress } from "@/lib/progress";
 import { useSettings } from "@/lib/settings";
 import { isNew } from "@/lib/srs";
 import { currentStreak, getNewIntroducedToday, useStats } from "@/lib/stats";
@@ -43,6 +43,7 @@ export default function TodayDashboard() {
   const strong = summary.mastered;
   const stillLearning = summary.learning + summary.review;
   const streak = mounted ? currentStreak(stats) : 0;
+  const troubleCount = mounted ? troubleItemIds(store, allIds).length : 0;
 
   return (
     <div className="grid gap-7 lg:grid-cols-[1fr_268px]">
@@ -63,6 +64,7 @@ export default function TodayDashboard() {
 
       <aside className="flex flex-col gap-4">
         <StreakWeek stats={stats} streak={streak} mounted={mounted} />
+        {troubleCount > 0 && <TroubleCard count={troubleCount} />}
         <RadialMastery pct={mastery} strong={strong} learning={stillLearning} mounted={mounted} />
         <CirclePeek />
       </aside>
@@ -374,6 +376,26 @@ function RadialMastery({ pct, strong, learning, mounted }: { pct: number; strong
         </div>
       </div>
     </div>
+  );
+}
+
+function TroubleCard({ count }: { count: number }) {
+  return (
+    <Link
+      href="/review?trouble=1"
+      className="block rounded-[16px] p-[18px] transition hover:-translate-y-0.5"
+      style={{ background: "var(--tint-coral)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--lilt-coral)" }}
+    >
+      <div className="flex items-center gap-2 font-display text-[15px] font-extrabold" style={{ color: "var(--ink)" }}>
+        <Icon name="target" size={17} strokeWidth={2.2} /> Trouble words
+      </div>
+      <div className="mt-1 text-[12.5px] font-bold" style={{ color: "var(--on-coral)" }}>
+        {count} word{count === 1 ? "" : "s"} you keep missing
+      </div>
+      <span className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-extrabold" style={{ color: "var(--signout)" }}>
+        Clear them →
+      </span>
+    </Link>
   );
 }
 

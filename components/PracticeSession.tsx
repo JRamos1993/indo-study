@@ -298,9 +298,15 @@ export function PracticeSession({ mode }: { mode: Mode }) {
           </div>
 
           <div className="p-6">
-            <p className="text-center text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
-              {todayCount(statsData)}/{settings.dailyGoal} reviews today
-            </p>
+            {todayCount(statsData) >= settings.dailyGoal ? (
+              <p className="text-center text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>
+                🎉 Daily goal reached — {todayCount(statsData)} reviews today!
+              </p>
+            ) : (
+              <p className="text-center text-[12.5px] font-bold" style={{ color: "var(--muted)" }}>
+                {todayCount(statsData)}/{settings.dailyGoal} reviews today · {settings.dailyGoal - todayCount(statsData)} to your goal
+              </p>
+            )}
 
             {wrong.length > 0 && (
               <div

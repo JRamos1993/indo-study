@@ -6,7 +6,7 @@ import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
-import { disablePush, enablePush, isPushOn, pushSupported } from "@/lib/push";
+import { disablePush, enablePush, getReminderHour, isPushOn, pushSupported, setReminderHour } from "@/lib/push";
 import {
   type DirectionPref,
   type LearningFocus,
@@ -133,8 +133,11 @@ export default function SettingsPage() {
 
           {/* ── Notifications ────────────────────────────────────────── */}
           <Section title="Notifications" icon="flame" shadow="var(--lilt-coral)" tint="var(--tint-coral)">
-            <Row label="Daily review reminders" hint="A nudge at 7pm when reviews are due (this device)" last>
+            <Row label="Daily review reminders" hint="A nudge when reviews are due (this device)" last={false}>
               <ReminderToggle />
+            </Row>
+            <Row label="Reminder time" hint="When to nudge you, in your local time" last>
+              <ReminderTimePicker />
             </Row>
           </Section>
 
@@ -321,6 +324,30 @@ function ReminderToggle() {
         </span>
       )}
     </div>
+  );
+}
+
+const REMINDER_HOURS = [7, 8, 9, 12, 17, 18, 19, 20, 21, 22];
+function fmtHour(h: number): string {
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:00 ${ampm}`;
+}
+function ReminderTimePicker() {
+  const [hour, setHour] = useState(19);
+  useEffect(() => setHour(getReminderHour()), []);
+  return (
+    <Dropdown
+      ariaLabel="Reminder time"
+      value={String(hour)}
+      options={REMINDER_HOURS.map((h) => ({ value: String(h), label: fmtHour(h) }))}
+      onChange={(v) => {
+        const h = Number(v);
+        setHour(h);
+        void setReminderHour(h);
+      }}
+      menuWidth={130}
+    />
   );
 }
 

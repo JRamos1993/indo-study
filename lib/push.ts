@@ -13,6 +13,14 @@ function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   return buf;
 }
 
+const HOUR_KEY = "lilt:reminder-hour:v1";
+
+export function getReminderHour(): number {
+  if (typeof window === "undefined") return 19;
+  const v = Number(localStorage.getItem(HOUR_KEY));
+  return Number.isInteger(v) && v >= 0 && v <= 23 ? v : 19;
+}
+
 export function pushSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -57,9 +65,38 @@ export async function enablePush(): Promise<{ ok: boolean; error?: string }> {
     body: JSON.stringify({
       subscription: { endpoint: sub.endpoint, keys: json.keys },
       tzOffset: new Date().getTimezoneOffset(),
+      reminderHour: getReminderHour(),
     }),
   });
   return res.ok ? { ok: true } : { ok: false, error: "server" };
+}
+
+/** Change the local reminder hour; if already subscribed, push the new time. */
+export async function setReminderHour(hour: number): Promise<void> {
+  try {
+    localStorage.setItem(HOUR_KEY, String(hour));
+  } catch {
+    /* ignore */
+  }
+  if (!pushSupported()) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    const json = sub.toJSON() as { keys?: { p256dh?: string; auth?: string } };
+    await fetch("/api/push/subscribe", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscription: { endpoint: sub.endpoint, keys: json.keys },
+        tzOffset: new Date().getTimezoneOffset(),
+        reminderHour: hour,
+      }),
+    }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function disablePush(): Promise<void> {

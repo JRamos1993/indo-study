@@ -33,7 +33,15 @@ export default function SignInPage() {
   const router = useRouter();
   const auth = useAuth();
   const [join, setJoin] = useState<string | null>(null);
+  const [invite, setInvite] = useState<{ circle: string; inviter: string } | null>(null);
   useEffect(() => setJoin(inviteCode()), []);
+  useEffect(() => {
+    if (!join) return;
+    fetch(`/api/circle/invite?code=${encodeURIComponent(join)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.circle && setInvite(d))
+      .catch(() => {});
+  }, [join]);
   const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -146,7 +154,13 @@ export default function SignInPage() {
           style={{ background: "var(--tint-lime)", border: "2px solid var(--edge)", color: "var(--lilt-ink)" }}
         >
           <Icon name="people" size={17} strokeWidth={2.2} />
-          You’re invited to a Circle — {mode === "login" ? "sign in" : "sign up"} to join it.
+          {invite ? (
+            <span>
+              <b>{invite.inviter}</b> invited you to “{invite.circle}” — {mode === "login" ? "sign in" : "sign up"} to join.
+            </span>
+          ) : (
+            <span>You’re invited to a Circle — {mode === "login" ? "sign in" : "sign up"} to join it.</span>
+          )}
         </div>
       )}
 

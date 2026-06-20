@@ -15,7 +15,7 @@ import { type GradeUndo, gradeItem, troubleItemIds, undoGrade, useProgress } fro
 import { type Direction, type KindedText, shuffle, wordTokens } from "@/lib/quiz";
 import { type LearningFocus, useSettings } from "@/lib/settings";
 import { speechSupported } from "@/lib/speech";
-import { type Grade, isDue, isNew } from "@/lib/srs";
+import { type Familiarity, type Grade, familiarity, isDue, isNew } from "@/lib/srs";
 import { currentStreak, getNewIntroducedToday, todayCount, useStats } from "@/lib/stats";
 import type { ItemContext } from "@/lib/types";
 import { useMounted } from "@/lib/useMounted";
@@ -48,33 +48,26 @@ function pickDirection(ctx: ItemContext): Direction {
   return Math.random() < 0.5 ? "id2en" : "en2id";
 }
 
-// Relative likelihood of each mixed/daily exercise type per learning focus.
-// "conversation" leans on listening+speaking, "reading" on recognition/typing,
-// "grammar" on cloze+word-order. resolveSub() still downgrades anything an item
-// can't support, so these are soft preferences, not guarantees.
-const FOCUS_WEIGHTS: Record<LearningFocus, Partial<Record<SubMode, number>>> = {
-  balanced: { mc: 2.0, type: 1.6, cloze: 1.4, listening: 1.4, order: 1.2, speaking: 1.0, flashcards: 1.4 },
-  conversation: { mc: 1.4, type: 0.9, cloze: 0.6, listening: 3.0, order: 0.6, speaking: 3.0, flashcards: 1.0 },
-  reading: { mc: 2.6, type: 2.0, cloze: 1.2, listening: 0.5, order: 0.6, speaking: 0.3, flashcards: 2.4 },
-  grammar: { mc: 1.2, type: 1.6, cloze: 3.0, listening: 0.6, order: 3.0, speaking: 0.5, flashcards: 1.0 },
-};
+// Character drills present items as flashcards / multiple-choice / typing.
+function kanaSub(): SubMode {
+  const r = Math.random();
+  return r < 0.45 ? "mc" : r < 0.8 ? "type" : "flashcards";
+}
 
-function pickSub(mode: Mode, focus: LearningFocus): SubMode {
-  // Character drills present items as flashcards / multiple-choice / typing.
-  if (mode === "kana" || mode === "kanji") {
-    const r = Math.random();
-    return r < 0.45 ? "mc" : r < 0.8 ? "type" : "flashcards";
-  }
-  if (mode !== "mixed" && mode !== "daily") return mode as SubMode;
-  const weights = FOCUS_WEIGHTS[focus] ?? FOCUS_WEIGHTS.balanced;
-  const entries = Object.entries(weights) as [SubMode, number][];
-  const total = entries.reduce((s, [, v]) => s + v, 0);
-  let r = Math.random() * total;
-  for (const [sub, v] of entries) {
-    r -= v;
-    if (r <= 0) return sub;
-  }
-  return "flashcards";
+// The smart flows (daily/review/unit) pick the exercise by how well you know
+// THIS word — a difficulty ladder, not a random grab-bag:
+//   new → meet (flashcard) · learning → recognise (MC) ·
+//   review → recall (type/listen) · mastered → produce (build a sentence / speak)
+// The learning focus nudges which skill within a tier; resolveSub() downgrades
+// anything the item can't support (e.g. cloze on a single word → type).
+function escalate(fam: Familiarity, focus: LearningFocus, speechOK: boolean): SubMode {
+  if (fam === "new") return "flashcards";
+  if (fam === "learning") return "mc";
+  if (fam === "review") return focus === "conversation" && speechOK ? "listening" : "type";
+  // mastered → production
+  if (focus === "conversation" && speechOK) return "speaking";
+  if (focus === "reading") return "type";
+  return Math.random() < 0.55 ? "cloze" : "order";
 }
 
 /** Downgrade a sub-mode when the item can't support it, so dedicated-mode
@@ -198,21 +191,31 @@ export function PracticeSession({ mode }: { mode: Mode }) {
   const makeCard = useCallback(
     (ctx: ItemContext): Card => {
       const speechOK = speechSupported();
-      // Teach-before-test: a never-seen word is shown as a flashcard FIRST — in
-      // guided unit study AND the daily smart-mix — so the daily session never
-      // quizzes a word the learner hasn't met yet. Everything else gets drilled.
-      const introNew = (mode === "unit" || mode === "daily") && isNew(storeRef.current[ctx.item.id]);
-      const sub = introNew
-        ? "flashcards"
-        : resolveSub(pickSub(mode === "unit" ? "mixed" : mode, settings.learningFocus), ctx, speechOK);
+      // Smart flows (daily / spaced review / unit) escalate by familiarity:
+      // meet → recognise → recall → produce, so a new word is always taught
+      // first and a well-known one is genuinely stretched. Dedicated drills
+      // (/quiz/mc, /study/listening, …) keep their explicit exercise; character
+      // drills present as flashcard/MC/typing.
+      const fam = familiarity(storeRef.current[ctx.item.id]);
+      let sub: SubMode;
+      if (mode === "kana" || mode === "kanji") {
+        sub = kanaSub();
+      } else if (mode === "daily" || mode === "mixed" || mode === "unit") {
+        sub = escalate(fam, settings.learningFocus, speechOK);
+      } else {
+        sub = mode as SubMode;
+      }
+      sub = resolveSub(sub, ctx, speechOK);
       const dir: Direction =
-        sub === "listening"
-          ? "id2en"
-          : sub === "speaking"
-            ? "en2id"
-            : settings.defaultDirection !== "auto"
-              ? settings.defaultDirection
-              : pickDirection(ctx);
+        fam === "new" && sub === "flashcards"
+          ? "id2en" // meeting a new word: show the word (+ audio), reveal the meaning
+          : sub === "listening"
+            ? "id2en"
+            : sub === "speaking"
+              ? "en2id"
+              : settings.defaultDirection !== "auto"
+                ? settings.defaultDirection
+                : pickDirection(ctx);
       return { ctx, dir, sub, requeues: 0 };
     },
     [mode, settings.defaultDirection, settings.learningFocus],

@@ -25,6 +25,7 @@ const NAV: NavDef[] = [
   { href: "/today", label: "Today", icon: "sun", match: (p) => p === "/today" || p.startsWith("/today/") },
   { href: "/learn", label: "Course", icon: "course", match: (p) => p.startsWith("/learn") || p.startsWith("/lessons") || p.startsWith("/course") },
   { href: "/practice", label: "Practice", icon: "target", match: (p) => p.startsWith("/practice") || p.startsWith("/study") || p.startsWith("/quiz") || p.startsWith("/review") },
+  { href: "/talk", label: "Talk", icon: "mic", match: (p) => p.startsWith("/talk") },
   { href: "/glossary", label: "Glossary", icon: "doc", match: (p) => p.startsWith("/glossary") },
   { href: "/stats", label: "Progress", icon: "bars", match: (p) => p.startsWith("/stats") || p.startsWith("/progress") },
   { href: "/circle", label: "Circle", icon: "people", match: (p) => p.startsWith("/circle") },

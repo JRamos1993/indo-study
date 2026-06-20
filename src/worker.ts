@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 import { Hono } from "hono";
+import ai from "./ai";
 import analytics from "./analytics";
 import auth from "./auth";
 import circle from "./circle";
@@ -18,6 +19,8 @@ export interface Env {
   VAPID_PUBLIC?: string;
   VAPID_PRIVATE_JWK?: string;
   VAPID_SUBJECT?: string;
+  /** Workers AI binding (conversation tutor + scenario generation). */
+  AI: Ai;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -64,6 +67,8 @@ app.route("/api/circle", circle);
 app.route("/api/events", analytics);
 // Web Push subscriptions for due-review reminders.
 app.route("/api/push", push);
+// Workers AI conversation tutor.
+app.route("/api/ai", ai);
 
 // `run_worker_first` only routes /api/* to the Worker; any other path that
 // reaches here means the static asset was missing — respond defensively.

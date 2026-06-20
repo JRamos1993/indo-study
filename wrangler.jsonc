@@ -37,6 +37,9 @@
 
   "observability": { "enabled": true },
 
+  // Workers AI — powers the conversation tutor + scenario generation.
+  "ai": { "binding": "AI" },
+
   // Hourly: send due-review reminders at each user's local hour; daily cleanup.
   "triggers": { "crons": ["0 * * * *"] },
 

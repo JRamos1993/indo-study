@@ -125,9 +125,9 @@ function SmartMixHero({
         </h2>
         <div className="my-4 flex items-stretch gap-4">
           <HeroStat n={reviewsDue} label="reviews due" accent />
-          <span className="w-0.5" style={{ background: "#332b52" }} />
+          <span className="w-0.5" style={{ background: "var(--ink-surface)" }} />
           <HeroStat n={newWords} label="new words" />
-          <span className="w-0.5" style={{ background: "#332b52" }} />
+          <span className="w-0.5" style={{ background: "var(--ink-surface)" }} />
           <HeroStat n={grammar} label="grammar" />
         </div>
         <Link
@@ -142,15 +142,15 @@ function SmartMixHero({
 
       {/* fanned card-deck motif */}
       <div className="pointer-events-none absolute right-5 top-1/2 hidden h-[170px] w-[180px] -translate-y-1/2 sm:block">
-        <span className="absolute left-10 top-8 h-[140px] w-[110px] rounded-2xl" style={{ background: "#332b52", border: "2px solid var(--lilt-lime)", transform: "rotate(-14deg)" }} />
-        <span className="absolute left-12 top-5 h-[140px] w-[110px] rounded-2xl" style={{ background: "#4a3f73", border: "2px solid #fff", transform: "rotate(-3deg)" }} />
+        <span className="absolute left-10 top-8 h-[140px] w-[110px] rounded-2xl" style={{ background: "var(--ink-surface)", border: "2px solid var(--lilt-lime)", transform: "rotate(-14deg)" }} />
+        <span className="absolute left-12 top-5 h-[140px] w-[110px] rounded-2xl" style={{ background: "var(--ink-surface-2)", border: "2px solid #fff", transform: "rotate(-3deg)" }} />
         <span
           className="absolute left-[3.25rem] top-3 flex h-[140px] w-[110px] flex-col items-center justify-center gap-2 rounded-2xl"
           style={{ background: "var(--lilt-violet)", border: "2px solid #fff", transform: "rotate(8deg)" }}
         >
           <span className="text-[11px] font-extrabold tracking-[0.06em]" style={{ color: "var(--lilt-lime)" }}>DUE NOW</span>
           <span className="px-2 text-center font-display text-[20px] font-extrabold text-white">{sample?.item.target ?? "—"}</span>
-          <span className="px-2 text-center text-[12px] font-bold" style={{ color: "#d6cff6" }}>{sample?.item.english ?? ""}</span>
+          <span className="px-2 text-center text-[12px] font-bold" style={{ color: "var(--on-ink-bright)" }}>{sample?.item.english ?? ""}</span>
         </span>
       </div>
     </div>
@@ -161,7 +161,7 @@ function HeroStat({ n, label, accent }: { n: number; label: string; accent?: boo
   return (
     <div>
       <div className="font-display text-[24px] font-extrabold" style={{ color: accent ? "var(--lilt-lime)" : "#fff" }}>{n}</div>
-      <div className="text-[12px] font-bold" style={{ color: "#b8b0da" }}>{label}</div>
+      <div className="text-[12px] font-bold" style={{ color: "var(--on-ink-muted)" }}>{label}</div>
     </div>
   );
 }

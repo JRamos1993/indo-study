@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
+import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 import { getAllItems } from "@/lib/data";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
@@ -69,27 +70,6 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
 
-function Logo({ withWordmark = true }: { withWordmark?: boolean }) {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="grid h-8 w-8 place-items-center" aria-hidden>
-        <svg viewBox="0 0 130 130" className="h-8 w-8">
-          <path
-            d="M26 24 h66 a18 18 0 0 1 18 18 v36 a18 18 0 0 1 -18 18 h-30 l-16 18 v-18 h-20 a18 18 0 0 1 -18 -18 v-36 a18 18 0 0 1 18 -18 z"
-            fill="var(--lilt-yellow)"
-            stroke="var(--edge)"
-            strokeWidth="7"
-          />
-        </svg>
-      </span>
-      {withWordmark && (
-        <span className="font-display text-[22px] font-extrabold tracking-tight" style={{ color: "var(--ink)" }}>
-          Lilt
-        </span>
-      )}
-    </span>
-  );
-}
 
 // ── Language switcher (sidebar pill) ─────────────────────────────────────────
 

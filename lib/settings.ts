@@ -38,6 +38,12 @@ export const DEFAULT_SETTINGS: Settings = {
   shareActivity: true,
 };
 
+// The daily goal is chosen in MINUTES (friendly, matches onboarding); the FSRS
+// engine measures it in reviews. ~2 reviews/min keeps the two coherent so the
+// goal reads the same everywhere. Both fields are kept in lock-step by the UI.
+export const REVIEWS_PER_MINUTE = 2;
+export const goalCardsForMinutes = (min: number) => Math.round(min * REVIEWS_PER_MINUTE);
+
 const listeners = new Set<() => void>();
 let cache: Settings | null = null;
 
@@ -50,10 +56,13 @@ function normalize(raw: unknown): Settings {
   const dir = o.defaultDirection;
   const theme = o.theme;
   const focus = o.learningFocus;
+  // The goal is chosen in minutes; the card target is always derived from it so
+  // the two can never drift (e.g. legacy settings saved via the old cards stepper).
+  const mins = Math.round(clamp(o.dailyGoalMinutes as number, 5, 60, DEFAULT_SETTINGS.dailyGoalMinutes));
   return {
     studyLanguage: isLangId(o.studyLanguage) ? o.studyLanguage : DEFAULT_SETTINGS.studyLanguage,
-    dailyGoal: Math.round(clamp(o.dailyGoal as number, 5, 200, DEFAULT_SETTINGS.dailyGoal)),
-    dailyGoalMinutes: Math.round(clamp(o.dailyGoalMinutes as number, 5, 60, DEFAULT_SETTINGS.dailyGoalMinutes)),
+    dailyGoal: goalCardsForMinutes(mins),
+    dailyGoalMinutes: mins,
     newPerDay: Math.round(clamp(o.newPerDay as number, 0, 100, DEFAULT_SETTINGS.newPerDay)),
     targetRetention: clamp(o.targetRetention as number, 0.7, 0.97, DEFAULT_SETTINGS.targetRetention),
     defaultDirection:

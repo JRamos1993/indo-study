@@ -5,7 +5,14 @@ import { Dropdown } from "@/components/Dropdown";
 import { Icon, type IconName } from "@/components/Icon";
 import { LANG_IDS, type LangId, getLanguage } from "@/lib/languages";
 import { resetAllProgress } from "@/lib/progress";
-import { type DirectionPref, type LearningFocus, type ThemePref, updateSettings, useSettings } from "@/lib/settings";
+import {
+  type DirectionPref,
+  type LearningFocus,
+  type ThemePref,
+  goalCardsForMinutes,
+  updateSettings,
+  useSettings,
+} from "@/lib/settings";
 
 const FOCUS_LABELS: Record<LearningFocus, string> = {
   balanced: "Balanced mix",
@@ -49,13 +56,14 @@ export default function SettingsPage() {
               />
             </Row>
 
-            <Row label="Daily goal" hint="Reviews per day for the streak ring" last={false}>
+            <Row label="Daily goal" hint={`Minutes a day — about ${goalCardsForMinutes(s.dailyGoalMinutes)} reviews`} last={false}>
               <Stepper
-                value={s.dailyGoal}
+                value={s.dailyGoalMinutes}
                 min={5}
-                max={200}
+                max={60}
                 step={5}
-                onChange={(dailyGoal) => updateSettings({ dailyGoal })}
+                suffix="min"
+                onChange={(m) => updateSettings({ dailyGoalMinutes: m })}
               />
             </Row>
 
@@ -257,12 +265,14 @@ function Stepper({
   min,
   max,
   step,
+  suffix,
   onChange,
 }: {
   value: number;
   min: number;
   max: number;
   step: number;
+  suffix?: string;
   onChange: (n: number) => void;
 }) {
   const btn =
@@ -282,7 +292,10 @@ function Stepper({
       >
         −
       </button>
-      <span className="w-10 text-center font-display text-[17px] font-extrabold tabular-nums">{value}</span>
+      <span className="min-w-[2.5rem] text-center font-display text-[17px] font-extrabold tabular-nums">
+        {value}
+        {suffix && <span className="ml-0.5 text-[12px] font-bold" style={{ color: "var(--muted)" }}>{suffix}</span>}
+      </span>
       <button
         className={btn}
         style={btnStyle}

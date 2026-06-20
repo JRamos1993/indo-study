@@ -120,7 +120,7 @@ export default function LearnDashboard() {
             <h2 className="mt-3.5 text-[26px] leading-tight text-white">
               {show && goalMet ? "Goal reached" : "Study today"}
             </h2>
-            <p className="mt-1.5 text-sm font-bold" style={{ color: "#b8b0da" }}>
+            <p className="mt-1.5 text-sm font-bold" style={{ color: "var(--on-ink-muted)" }}>
               {!show
                 ? "One tap — the best mix."
                 : goalMet
@@ -130,7 +130,7 @@ export default function LearnDashboard() {
           </div>
           <div
             className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5"
-            style={{ border: "2px solid var(--lilt-lime)", background: "#332b52" }}
+            style={{ border: "2px solid var(--lilt-lime)", background: "var(--ink-surface)" }}
           >
             <span style={{ color: "var(--lilt-yellow)" }}>
               <Icon name="flame" size={16} />
@@ -141,14 +141,14 @@ export default function LearnDashboard() {
         <div className="mt-5">
           <div
             className="mb-1.5 flex justify-between text-[11.5px] font-extrabold uppercase tracking-[0.04em]"
-            style={{ color: "#b8b0da" }}
+            style={{ color: "var(--on-ink-muted)" }}
           >
             <span>Today</span>
             <span>
               {show ? doneToday : 0} / {dailyGoal}
             </span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "#332b52" }}>
+          <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: "var(--ink-surface)" }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${goalPct}%`, background: "var(--lilt-lime)" }}

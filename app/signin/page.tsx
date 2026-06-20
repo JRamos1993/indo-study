@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
+import { Logo } from "@/components/Logo";
 import { login, recover, signup } from "@/lib/auth";
 
 type Mode = "signup" | "login" | "recover";
@@ -20,21 +21,6 @@ const ERRORS: Record<string, string> = {
   network: "Can't reach the server. Please check your connection.",
 };
 
-function Logo() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <svg viewBox="0 0 130 130" className="h-9 w-9" aria-hidden>
-        <path
-          d="M26 24 h66 a18 18 0 0 1 18 18 v36 a18 18 0 0 1 -18 18 h-30 l-16 18 v-18 h-20 a18 18 0 0 1 -18 -18 v-36 a18 18 0 0 1 18 -18 z"
-          fill="var(--lilt-yellow)"
-          stroke="var(--edge)"
-          strokeWidth="7"
-        />
-      </svg>
-      <span className="font-display text-[24px] font-extrabold tracking-tight">Lilt</span>
-    </span>
-  );
-}
 
 export default function SignInPage() {
   const router = useRouter();
@@ -76,7 +62,7 @@ export default function SignInPage() {
   if (recovery) {
     return (
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col justify-center px-5 py-8">
-        <div className="mb-6"><Logo /></div>
+        <div className="mb-6"><Logo size={36} /></div>
         <div
           className="rounded-[22px] p-6 sm:p-7"
           style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 0 var(--lilt-lime)" }}
@@ -128,7 +114,7 @@ export default function SignInPage() {
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col justify-center px-5 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/"><Logo /></Link>
+        <Link href="/"><Logo size={36} /></Link>
         <Link href="/" className="text-[12.5px] font-extrabold" style={{ color: "var(--muted)" }}>
           ← Home
         </Link>

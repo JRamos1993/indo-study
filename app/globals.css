@@ -27,6 +27,13 @@
   --on-coral: #9a2c40; /* text on coral surfaces */
   --signout: #d13a57;
 
+  /* ===== On the always-dark "lilt-ink" hero cards (theme-independent) ===== */
+  --ink-surface: #332b52; /* raised surface / divider on ink */
+  --ink-surface-2: #4a3f73; /* lighter raised surface on ink */
+  --on-ink: #cfc7ee; /* body text on ink */
+  --on-ink-muted: #b8b0da; /* secondary text on ink */
+  --on-ink-bright: #d6cff6; /* emphasised text on ink */
+
   /* ===== Surface tints ===== */
   --panel: #f6f5fb; /* large screen container fill */
   --panel-alt: #efedf7; /* alt panel fill */

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon, type IconName } from "@/components/Icon";
+import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 import { LANGUAGES, type LangId } from "@/lib/languages";
 import { updateSettings } from "@/lib/settings";
@@ -20,21 +21,6 @@ const STEPS = [
   { n: "03", title: "Study in short bursts", body: "A one-tap daily mix of due, tricky and new." },
 ];
 
-function Logo() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <svg viewBox="0 0 130 130" className="h-8 w-8" aria-hidden>
-        <path
-          d="M26 24 h66 a18 18 0 0 1 18 18 v36 a18 18 0 0 1 -18 18 h-30 l-16 18 v-18 h-20 a18 18 0 0 1 -18 -18 v-36 a18 18 0 0 1 18 -18 z"
-          fill="var(--lilt-yellow)"
-          stroke="var(--edge)"
-          strokeWidth="7"
-        />
-      </svg>
-      <span className="font-display text-[23px] font-extrabold tracking-tight">Lilt</span>
-    </span>
-  );
-}
 
 export default function Landing() {
   const router = useRouter();
@@ -77,7 +63,7 @@ export default function Landing() {
               <br />
               <span style={{ color: "var(--lilt-lime)" }}>not longer.</span>
             </h1>
-            <p className="mt-4 max-w-md text-[15px] font-medium" style={{ color: "#cfc7ee" }}>
+            <p className="mt-4 max-w-md text-[15px] font-medium" style={{ color: "var(--on-ink)" }}>
               A bold little app for beginner Japanese and Indonesian — kana, kanji and the words you
               actually use, on a memory schedule that does the remembering for you.
             </p>
@@ -98,22 +84,22 @@ export default function Landing() {
                 {LANGUAGES.id.flag} Start Indonesian
               </button>
             </div>
-            <p className="mt-3.5 text-[12.5px] font-bold" style={{ color: "#b8b0da" }}>
+            <p className="mt-3.5 text-[12.5px] font-bold" style={{ color: "var(--on-ink-muted)" }}>
               Free account · syncs across your devices
             </p>
           </div>
 
           {/* fanned card-deck motif */}
           <div className="pointer-events-none absolute right-6 top-1/2 hidden h-[190px] w-[200px] -translate-y-1/2 lg:block">
-            <span className="absolute left-10 top-9 h-[150px] w-[120px] rounded-2xl" style={{ background: "#332b52", border: "2px solid var(--lilt-lime)", transform: "rotate(-14deg)" }} />
-            <span className="absolute left-12 top-6 h-[150px] w-[120px] rounded-2xl" style={{ background: "#4a3f73", border: "2px solid #fff", transform: "rotate(-3deg)" }} />
+            <span className="absolute left-10 top-9 h-[150px] w-[120px] rounded-2xl" style={{ background: "var(--ink-surface)", border: "2px solid var(--lilt-lime)", transform: "rotate(-14deg)" }} />
+            <span className="absolute left-12 top-6 h-[150px] w-[120px] rounded-2xl" style={{ background: "var(--ink-surface-2)", border: "2px solid #fff", transform: "rotate(-3deg)" }} />
             <span
               className="absolute left-14 top-3 flex h-[150px] w-[120px] flex-col items-center justify-center gap-2 rounded-2xl"
               style={{ background: "var(--lilt-violet)", border: "2px solid #fff", transform: "rotate(8deg)" }}
             >
               <span className="text-[11px] font-extrabold tracking-[0.06em]" style={{ color: "var(--lilt-lime)" }}>LILT</span>
               <span className="px-2 text-center font-display text-[22px] font-extrabold text-white">こんにちは</span>
-              <span className="px-2 text-center text-[12px] font-bold" style={{ color: "#d6cff6" }}>hello</span>
+              <span className="px-2 text-center text-[12px] font-bold" style={{ color: "var(--on-ink-bright)" }}>hello</span>
             </span>
           </div>
         </section>

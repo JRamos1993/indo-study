@@ -15,6 +15,7 @@ export default function StatsPage() {
   const store = useProgress();
   const stats = useStats();
   const dailyGoal = settings.dailyGoal;
+  const dailyGoalMinutes = settings.dailyGoalMinutes;
   const mounted = useMounted();
 
   const allIds = useMemo(
@@ -89,10 +90,15 @@ export default function StatsPage() {
         className="mb-5 rounded-[18px] p-5"
         style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--edge)" }}
       >
-        <div className="mb-3.5 flex items-center justify-between">
-          <h2 className="text-[18px]">Daily goal</h2>
+        <div className="mb-3.5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-[18px]">Daily goal</h2>
+            <p className="mt-0.5 text-[12px] font-bold" style={{ color: "var(--muted)" }}>
+              About {dailyGoalMinutes} min a day · {dailyGoal} reviews
+            </p>
+          </div>
           <span
-            className="rounded-full px-3 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.04em]"
+            className="shrink-0 rounded-full px-3 py-1 text-[11.5px] font-extrabold uppercase tracking-[0.04em]"
             style={
               goalReached
                 ? { background: "var(--lilt-lime)", color: "var(--pop-ink)", border: "2px solid var(--edge)" }

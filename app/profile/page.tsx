@@ -155,21 +155,21 @@ export default function ProfilePage() {
         className="flex flex-col gap-4 rounded-[18px] p-5 sm:flex-row sm:items-center"
         style={{ background: "var(--lilt-ink)", border: "2px solid var(--edge)", boxShadow: "4px 4px 0 0 var(--lilt-violet)", color: "#fff" }}
       >
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px]" style={{ background: "#332b52", border: "2px solid var(--lilt-lime)", color: "var(--lilt-lime)" }}>
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px]" style={{ background: "var(--ink-surface)", border: "2px solid var(--lilt-lime)", color: "var(--lilt-lime)" }}>
           <Icon name={auth.user ? "check" : "refresh"} size={24} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
           {auth.user ? (
             <>
               <div className="font-display text-[17px] font-extrabold text-white">Signed in &amp; syncing</div>
-              <div className="mt-0.5 truncate text-[13px] font-bold" style={{ color: "#b8b0da" }}>
+              <div className="mt-0.5 truncate text-[13px] font-bold" style={{ color: "var(--on-ink-muted)" }}>
                 {auth.user.email}
               </div>
             </>
           ) : (
             <>
               <div className="font-display text-[17px] font-extrabold text-white">Sync across devices</div>
-              <div className="mt-0.5 text-[13px] font-bold" style={{ color: "#b8b0da" }}>
+              <div className="mt-0.5 text-[13px] font-bold" style={{ color: "var(--on-ink-muted)" }}>
                 Your progress lives on this device. Create an account to carry your streak and
                 mastery to your phone — and to join a Circle.
               </div>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
           <button
             onClick={() => logout()}
             className="shrink-0 rounded-full px-5 py-2.5 text-center text-[13px] font-extrabold transition active:translate-y-0.5"
-            style={{ background: "#332b52", color: "#fff", border: "2px solid var(--lilt-coral)" }}
+            style={{ background: "var(--ink-surface)", color: "#fff", border: "2px solid var(--lilt-coral)" }}
           >
             Sign out
           </button>

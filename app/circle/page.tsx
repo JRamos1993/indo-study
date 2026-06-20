@@ -177,11 +177,11 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
           </div>
         </div>
         {detail.goal ? (
-          <div className="mt-3 h-3 w-full overflow-hidden rounded-full" style={{ background: "#332b52", border: "1.5px solid var(--lilt-lime)" }}>
+          <div className="mt-3 h-3 w-full overflow-hidden rounded-full" style={{ background: "var(--ink-surface)", border: "1.5px solid var(--lilt-lime)" }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${goalPct}%`, background: "var(--lilt-lime)" }} />
           </div>
         ) : (
-          <p className="mt-2 text-[13px] font-bold" style={{ color: "#b8b0da" }}>No goal set yet.</p>
+          <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--on-ink-muted)" }}>No goal set yet.</p>
         )}
         {detail.isOwner && (
           <div className="mt-3 flex items-center gap-2">
@@ -189,7 +189,7 @@ function CircleView({ detail, onChange }: { detail: CircleDetail; onChange: () =
               value={goalInput}
               onChange={(e) => setGoalInput(e.target.value.replace(/[^0-9]/g, ""))}
               className="w-24 rounded-[10px] border-2 px-3 py-1.5 text-center font-display text-[15px] font-extrabold outline-none"
-              style={{ background: "#332b52", borderColor: "#4a3f73", color: "#fff" }}
+              style={{ background: "var(--ink-surface)", borderColor: "var(--ink-surface-2)", color: "#fff" }}
             />
             <button onClick={saveGoal} className="rounded-full px-4 py-1.5 text-[13px] font-extrabold" style={{ background: "var(--lilt-violet)", color: "#fff", border: "2px solid var(--lilt-lime)" }}>
               Set weekly words

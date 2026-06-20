@@ -47,6 +47,7 @@ ai.post("/chat", async (c) => {
     }))
     .filter((m) => m.content);
   if (!history.length) return c.json({ error: "bad_request" }, 400);
+  if (!c.env.AI) return c.json({ error: "ai_unavailable", detail: "no AI binding" }, 503);
 
   try {
     const out = (await c.env.AI.run(MODEL as keyof AiModels, {
@@ -55,10 +56,10 @@ ai.post("/chat", async (c) => {
       temperature: 0.6,
     })) as { response?: string };
     const reply = (out.response ?? "").trim();
-    if (!reply) return c.json({ error: "ai_unavailable" }, 503);
+    if (!reply) return c.json({ error: "ai_unavailable", detail: "empty" }, 503);
     return c.json({ reply });
-  } catch {
-    return c.json({ error: "ai_unavailable" }, 503);
+  } catch (e) {
+    return c.json({ error: "ai_unavailable", detail: String((e as Error)?.message || e).slice(0, 300) }, 503);
   }
 });
 

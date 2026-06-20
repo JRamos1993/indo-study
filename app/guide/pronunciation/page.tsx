@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSettings } from "@/lib/settings";
 
 type Row = [string, string, string];

@@ -7,4 +7,7 @@ next-env.d.ts
 .DS_Store
 .env*.local
 .wrangler
+.dev.vars
+.dev.vars.*
+*.log
 worker-configuration.d.ts

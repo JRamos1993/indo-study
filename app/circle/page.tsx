@@ -73,8 +73,7 @@ function SignedOut() {
       </span>
       <h2 className="text-[20px]">Sign in to join a Circle</h2>
       <p className="mx-auto mt-2 max-w-sm text-[14px] font-semibold" style={{ color: "var(--text-body)" }}>
-        Circles need an account so your shared activity can sync. Your solo learning works without
-        one.
+        Create a free account to start a Circle, set a weekly group goal, and see who studied today.
       </p>
       <Link href="/signin" className="btn btn-primary mt-5">Create account</Link>
     </div>

@@ -85,12 +85,14 @@ export default function ProfilePage() {
               <>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-display text-[22px] font-extrabold">{profile.name}</span>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.05em]"
-                    style={{ background: "var(--lilt-yellow)", color: "var(--lilt-ink)", border: "1.5px solid var(--edge)" }}
-                  >
-                    Local
-                  </span>
+                  {!auth.user && (
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.05em]"
+                      style={{ background: "var(--lilt-yellow)", color: "var(--lilt-ink)", border: "1.5px solid var(--edge)" }}
+                    >
+                      Local
+                    </span>
+                  )}
                 </div>
                 <div className="text-[13px] font-bold" style={{ color: "var(--muted)" }}>@{profile.handle}</div>
               </>
